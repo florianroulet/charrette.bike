@@ -59,8 +59,7 @@ Moteur moteur = Moteur();
 #define Ku 15
 #define Tu 1.5
 //double Kp = 8, Ki = 0.2, Kd = 0.1;
-double Kp = 0.8, Ki = 10, Kd = 0.1;
-//double Kp = 9.5, Ki = 0, Kd = ;
+double Kp = 6.5, Ki = 3.25, Kd = 0.1;
 
 
 double consigneVitesse;
@@ -75,6 +74,10 @@ MovingAverageFilter<double, double> vitesseFiltree(4);
 double vitesseMoyenne;
 double vitesseInstantanee;
 
+
+int plus = 3;
+int moins = 4;
+int halt = 5;
 
 /////////////////////////////////////////////////
 //////////////////// Graph //////////////////////
@@ -91,13 +94,20 @@ void setup()
   Serial.begin(9600);
   //moteur
   
+  pinMode(plus, INPUT_PULLUP);
+  pinMode(moins, INPUT_PULLUP);
+  pinMode(halt, INPUT_PULLUP);
+  attachPCINT(digitalPinToPCINT(plus),pluss, CHANGE);
+  attachPCINT(digitalPinToPCINT(moins),moinss, CHANGE);
+  attachPCINT(digitalPinToPCINT(halt),haltt, CHANGE);
+
   attachPCINT(digitalPinToPCINT(moteur.getUPin()),interruptU, CHANGE);
   attachPCINT(digitalPinToPCINT(moteur.getVPin()),interruptV, CHANGE);
   
 
   //PID
   myPID.SetMode(AUTOMATIC);
-  myPID.SetOutputLimits(70, 255);
+  myPID.SetOutputLimits(150, 255);
   myPID.SetSampleTime(1);
   consigneVitesse = 10;
 }
@@ -115,16 +125,39 @@ void interruptV()
 {
   moteur.interruptV();
 }
+void pluss(){
+  
+  if(!digitalRead(plus)){
+    Kp+=1;
+    /*if(consigneVitesse==0)
+      consigneVitesse=10;
+    else if(consigneVitesse <= 25)
+      consigneVitesse+=2;
+ */
+  }
+}
+void moinss(){
+  if(!digitalRead(moins))// && consigneVitesse>=2)
+    Kp-=1;
+    //consigneVitesse-=2;
+}
+
+void haltt(){
+  if(digitalRead(halt))
+    consigneVitesse=10;
+   else
+    consigneVitesse=0;
+}
 
 void miseAJourPID()
 {
   moteur.calculerVitesse();
   vitesseInstantanee = moteur.getVitesse();
   vitesseFiltree.push(&vitesseInstantanee, &vitesseMoyenne);
-  //lectureVitesse = vitesseMoyenne;
-  lectureVitesse = vitesseInstantanee;
-  //myPID.Compute();
-  moteur.mettreLesGaz(80);
+  lectureVitesse = vitesseMoyenne;
+  //lectureVitesse = vitesseInstantanee;
+  myPID.Compute();
+  moteur.mettreLesGaz(sortieMoteur);
 }
 
 
@@ -143,12 +176,19 @@ void debugMessage()
   Serial.print("sortie Moteur :");
   Serial.print(sortieMoteur);
   Serial.print("\t");
+  Serial.print("Ki :");
+  Serial.print(Ki);
+  Serial.print("\t");
   Serial.println();
 }
 
-void envoiVitesse(float vitesse){
+void envoi(float vitesse){
   byte * b = (byte *) &vitesse;
   Serial.write(b,4);
+}
+
+void envoiFin(){
+  Serial.write("\n");
 }
 
 void loop()
@@ -157,8 +197,14 @@ void loop()
   miseAJourPID();
   moteur.setMoteurState(SPINNING);
 
-  envoiVitesse(moteur.getVitesse());
- 
-  //Serial.println(moteur.getVitesse());
+  envoi(moteur.getVitesse());
+  envoi(consigneVitesse);
+  envoi(sortieMoteur);
+  envoi(5.2);
+  envoi(3.6);
+  envoiFin();
+  //if(consigneVitesse)
+  //  envoiVitesse(moteur.getVitesse());
+  //  Serial.println(moteur.getVitesse());
   //debugMessage();
 }
