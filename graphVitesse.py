@@ -19,6 +19,8 @@ class serialPlot:
         self.dataNumBytes = dataNumBytes
         self.rawData = bytearray(dataNumBytes)
         self.dataX = collections.deque([0] * plotLength, maxlen=plotLength)
+        self.dataY = collections.deque([0] * plotLength, maxlen=plotLength)
+        self.dataZ = collections.deque([0] * plotLength, maxlen=plotLength)
 
         self.isRun = True
         self.isReceiving = False
@@ -42,21 +44,32 @@ class serialPlot:
             while self.isReceiving != True:
                 time.sleep(0.1)
  
-    def getSerialData(self, frame, linesX,  lineXValueText, lineXLabel, timeText):
+    def getSerialData(self, frame, linesX, linesY, linesZ, lineXValueText, lineYValueText, lineZValueText, lineXLabel, lineYLabel, lineZLabel, timeText):
         currentTimer = time.perf_counter()
         self.plotTimer = int((currentTimer - self.previousTimer) * 1000)     # the first reading will be erroneous
         self.previousTimer = currentTimer
         timeText.set_text('Plot Interval = ' + str(self.plotTimer) + 'ms')
         #print(type(self.rawData) )
         #print(len(self.rawData))
-        vitesse, = struct.unpack('f', self.rawData)    # use 'h' for a 2 byte integer
-        #print(b1 + ' ' + b2 + ' ' + b3 + ' ' + b4)
-        print(vitesse)
-        self.dataX.append(vitesse)    # we get the latest data point and append it to our array
+        #v= self.rawData.split(",")
 
+        try:
+            vitesse, consigne, pwm, kp, ki, end = struct.unpack('fffffc', self.rawData)    # use 'h' for a 2 byte integer
+            print(kp)
+            self.dataX.append(vitesse)    # we get the latest data point and append it to our array
+            self.dataY.append(consigne)
+            self.dataZ.append(pwm)
+        except:
+            print("erreur lecture")
+
+        #print(b1 + ' ' + b2 + ' ' + b3 + ' ' + b4)
         linesX.set_data(range(self.plotMaxLength), self.dataX)
+        linesY.set_data(range(self.plotMaxLength), self.dataY)
+        linesZ.set_data(range(self.plotMaxLength), self.dataZ)
 
         lineXValueText.set_text('[' + lineXLabel + '] = ' )
+        lineYValueText.set_text('[' + lineYLabel + '] = ' )
+        lineZValueText.set_text('[' + lineZLabel + '] = ' )
 
         # self.csvData.append(self.data[-1])
  
@@ -64,7 +77,8 @@ class serialPlot:
         time.sleep(1.0)  # give some buffer time for retrieving data
         self.serialConnection.reset_input_buffer()
         while (self.isRun):
-            self.serialConnection.readinto(self.rawData)
+            self.rawData=self.serialConnection.readline()
+            #self.serialConnection.readinto(self.rawData)
             self.isReceiving = True
             #print(self.rawData)
  
@@ -82,7 +96,7 @@ def main():
     portName = '/dev/ttyUSB0'
     baudRate = 9600
     maxPlotLength = 100
-    dataNumBytes = 4        # number of bytes of 1 data point
+    dataNumBytes =  22      # number of bytes of 1 data point
     s = serialPlot(portName, baudRate, maxPlotLength, dataNumBytes)   # initializes all required variables
     s.readSerialStart()                                               # starts background thread
  
@@ -91,7 +105,7 @@ def main():
     xmin = 0
     xmax = maxPlotLength
     ymin = 0
-    ymax = 50
+    ymax = 260
     fig = plt.figure()
     ax = plt.axes(xlim=(xmin, xmax), ylim=(float(ymin - (ymax - ymin) / 10), float(ymax + (ymax - ymin) / 10)))
     ax.set_title('Arduino Analog Read')
@@ -99,13 +113,18 @@ def main():
     ax.set_ylabel("AnalogRead Value")
  
     lineXLabel = 'Vitesse'
+    lineYLabel = 'Consigne'
+    lineZLabel = 'PWM'
 
     timeText = ax.text(0.50, 0.95, '', transform=ax.transAxes)
     linesX = ax.plot([], [], label=lineXLabel)[0]
-
+    linesY = ax.plot([], [], label=lineYLabel)[0]
+    linesZ = ax.plot([], [], label=lineZLabel)[0]
     lineXValueText = ax.text(0.50, 0.90, '', transform=ax.transAxes)
+    lineYValueText = ax.text(0.50, 0.85, '', transform=ax.transAxes)
+    lineZValueText = ax.text(0.50, 0.80, '', transform=ax.transAxes)
 
-    anim = animation.FuncAnimation(fig, s.getSerialData, fargs=(linesX,  lineXValueText, lineXLabel, timeText), interval=pltInterval)    # fargs has to be a tuple
+    anim = animation.FuncAnimation(fig, s.getSerialData, fargs=(linesX, linesY, linesZ, lineXValueText, lineYValueText, lineZValueText, lineXLabel, lineYLabel, lineZLabel, timeText), interval=pltInterval)    # fargs has to be a tuple
  
     plt.legend(loc="upper left")
     plt.grid(which='major')
