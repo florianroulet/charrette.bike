@@ -55,21 +55,21 @@ class serialPlot:
 
         try:
             vitesse, consigne, pwm, kp, ki, end = struct.unpack('fffffc', self.rawData)    # use 'h' for a 2 byte integer
-            print(kp)
+            print("Kp: {:3.2f} - Ki: {:3.2f}".format(kp,ki))
             self.dataX.append(vitesse)    # we get the latest data point and append it to our array
             self.dataY.append(consigne)
             self.dataZ.append(pwm)
-        except:
-            print("erreur lecture")
 
         #print(b1 + ' ' + b2 + ' ' + b3 + ' ' + b4)
-        linesX.set_data(range(self.plotMaxLength), self.dataX)
-        linesY.set_data(range(self.plotMaxLength), self.dataY)
-        linesZ.set_data(range(self.plotMaxLength), self.dataZ)
+            linesX.set_data(range(self.plotMaxLength), self.dataX)
+            linesY.set_data(range(self.plotMaxLength), self.dataY)
+            linesZ.set_data(range(self.plotMaxLength), self.dataZ)
 
-        lineXValueText.set_text('[' + lineXLabel + '] = ' )
-        lineYValueText.set_text('[' + lineYLabel + '] = ' )
-        lineZValueText.set_text('[' + lineZLabel + '] = ' )
+            lineXValueText.set_text('[' + lineXLabel + '] = ' + '{:3.2f}'.format(vitesse))
+            lineYValueText.set_text('[' + lineYLabel + '] = ' + '{:3.2f}'.format(consigne) )
+            lineZValueText.set_text('[' + lineZLabel + '] = ' + '{:3.0f}'.format(pwm) )
+        except:
+            print("erreur lecture")
 
         # self.csvData.append(self.data[-1])
  
@@ -96,7 +96,7 @@ def main():
     portName = '/dev/ttyUSB0'
     baudRate = 9600
     maxPlotLength = 100
-    dataNumBytes =  22      # number of bytes of 1 data point
+    dataNumBytes =  22     # number of bytes of 1 data point
     s = serialPlot(portName, baudRate, maxPlotLength, dataNumBytes)   # initializes all required variables
     s.readSerialStart()                                               # starts background thread
  

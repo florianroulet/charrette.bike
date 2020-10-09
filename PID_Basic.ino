@@ -58,8 +58,8 @@ Moteur moteur = Moteur();
 
 #define Ku 15
 #define Tu 1.5
-//double Kp = 8, Ki = 0.2, Kd = 0.1;
 double Kp = 6.5, Ki = 3.25, Kd = 0.1;
+//double Kp = 3, Ki = 0, Kd = 0;
 
 
 double consigneVitesse;
@@ -78,6 +78,7 @@ double vitesseInstantanee;
 int plus = 3;
 int moins = 4;
 int halt = 5;
+bool haltFlag=0;
 
 /////////////////////////////////////////////////
 //////////////////// Graph //////////////////////
@@ -107,8 +108,8 @@ void setup()
 
   //PID
   myPID.SetMode(AUTOMATIC);
-  myPID.SetOutputLimits(150, 255);
-  myPID.SetSampleTime(1);
+  myPID.SetOutputLimits(100, 255);
+  myPID.SetSampleTime(50);
   consigneVitesse = 10;
 }
 
@@ -125,28 +126,41 @@ void interruptV()
 {
   moteur.interruptV();
 }
+
+void pluss(){
+  
+  if(!digitalRead(plus)){
+    if(consigneVitesse==0)
+      consigneVitesse=10;
+    else if(consigneVitesse <= 25)
+      consigneVitesse+=2;
+ 
+  }
+}
+void moinss(){
+  if(!digitalRead(moins) && consigneVitesse>=2)
+    consigneVitesse-=2;
+}
+/*
 void pluss(){
   
   if(!digitalRead(plus)){
     Kp+=1;
-    /*if(consigneVitesse==0)
-      consigneVitesse=10;
-    else if(consigneVitesse <= 25)
-      consigneVitesse+=2;
- */
   }
 }
 void moinss(){
-  if(!digitalRead(moins))// && consigneVitesse>=2)
+  if(!digitalRead(moins))
     Kp-=1;
-    //consigneVitesse-=2;
 }
-
+*/
 void haltt(){
   if(digitalRead(halt))
-    consigneVitesse=10;
-   else
-    consigneVitesse=0;
+    //consigneVitesse=10;
+    haltFlag=0;
+   else{
+    haltFlag=1;
+    sortieMoteur=0;
+   }
 }
 
 void miseAJourPID()
@@ -156,7 +170,8 @@ void miseAJourPID()
   vitesseFiltree.push(&vitesseInstantanee, &vitesseMoyenne);
   lectureVitesse = vitesseMoyenne;
   //lectureVitesse = vitesseInstantanee;
-  myPID.Compute();
+  if(!haltFlag)
+    myPID.Compute();
   moteur.mettreLesGaz(sortieMoteur);
 }
 
@@ -200,8 +215,8 @@ void loop()
   envoi(moteur.getVitesse());
   envoi(consigneVitesse);
   envoi(sortieMoteur);
-  envoi(5.2);
-  envoi(3.6);
+  envoi(Kp);
+  envoi(Ki);
   envoiFin();
   //if(consigneVitesse)
   //  envoiVitesse(moteur.getVitesse());
