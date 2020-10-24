@@ -27,7 +27,8 @@ const int HX711_dout = 8; //mcu > HX711 dout pin
 const int HX711_sck = 7; //mcu > HX711 sck pin
 
 //HX711 constructor:
-HX711_ADC LoadCell(HX711_dout, HX711_sck);  
+HX711_ADC LoadCell(HX711_dout, HX711_sck); 
+float THRESHOLD_CAPTEUR = 0.5; 
 bool newDataReady = 0;
 
 
@@ -72,9 +73,10 @@ double Kp = 6.5, Ki = 3.25, Kd = 0.1;
 double consigneVitesse;
 double lectureVitesse;
 double sortieMoteur;
-double valeurCapteur;
+double valeurCapteur, valeurCapteurSeuil;
+double consigneCapteur = 0;
 
-PID myPID(&lectureVitesse, &sortieMoteur, &consigneVitesse, Kp, Ki, Kd, DIRECT);
+PID myPID(&valeurCapteurSeuil, &sortieMoteur, &consigneCapteur, Kp, Ki, Kd, REVERSE);
 
 
 //calcul vitesse moyenne
@@ -86,7 +88,7 @@ double vitesseInstantanee;
 int plus = 3;
 int moins = 4;
 int halt = 5;
-bool haltFlag=1;
+bool haltFlag=0;
 
 /////////////////////////////////////////////////
 //////////////////// Graph //////////////////////
@@ -116,8 +118,8 @@ void setup()
 
   //PID
   myPID.SetMode(AUTOMATIC);
-  myPID.SetOutputLimits(100, 255);
-  myPID.SetSampleTime(50);
+  myPID.SetOutputLimits(130, 230);
+  myPID.SetSampleTime(100);
   consigneVitesse = 10;
 
 
@@ -182,8 +184,8 @@ void moinss(){
 }
 */
 void haltt(){
-  if(digitalRead(halt)){
-    //consigneVitesse=10;
+  if(!digitalRead(halt)){
+    consigneVitesse=10;
     haltFlag=1;
     sortieMoteur=0;
   }
@@ -243,6 +245,7 @@ void updateCell(HX711_ADC &cell, bool &newDataReady, double &valeur){
   // get smoothed value from the dataset:
   if (newDataReady) {
       float i = cell.getData();
+      
       valeur = i;
   }
 }
@@ -302,23 +305,28 @@ void ledFail(){
 void loop()
 {
   
+  updateCell(LoadCell, newDataReady, valeurCapteur);
+  if(abs(valeurCapteur)<THRESHOLD_CAPTEUR)
+    valeurCapteurSeuil = 0;
+  else
+    valeurCapteurSeuil = valeurCapteur;
+    
   miseAJourPID();
   moteur.setMoteurState(SPINNING);
-  updateCell(LoadCell, newDataReady, valeurCapteur);
   if(newDataReady){
+    //rafraichissement toutes les 100ms environ
     newDataReady=0;
     ledPrint(valeurCapteur,10.0,0.3);
-    Serial.println("Yep");
   }
  // else 
  //   ledFail();
 
-  /*envoi(moteur.getVitesse());
+  envoi(moteur.getVitesse());
   envoi(consigneVitesse);
   envoi(sortieMoteur);
   envoi(valeurCapteur);
   envoiFin();
-  */
+  
   //if(consigneVitesse)
   //  envoiVitesse(moteur.getVitesse());
   //  Serial.println(moteur.getVitesse());
