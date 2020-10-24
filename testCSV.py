@@ -9,6 +9,7 @@ import matplotlib.pyplot as plt
 import matplotlib.animation as animation
 import struct
 import pandas as pd
+import datetime
  
  
 class serialPlot:
@@ -27,22 +28,8 @@ class serialPlot:
         self.thread = None
         self.plotTimer = 0
         self.previousTimer = 0
-        # self.csvData = []
+        self.csvData = []
  
-        print('Trying to connect to: ' + str(serialPort) + ' at ' + str(serialBaud) + ' BAUD.')
-        try:
-            self.serialConnection = serial.Serial(serialPort, serialBaud, timeout=4)
-            print('Connected to ' + str(serialPort) + ' at ' + str(serialBaud) + ' BAUD.')
-        except:
-            print("Failed to connect with " + str(serialPort) + ' at ' + str(serialBaud) + ' BAUD.')
- 
-    def readSerialStart(self):
-        if self.thread == None:
-            self.thread = Thread(target=self.backgroundThread)
-            self.thread.start()
-            # Block till we start receiving values
-            while self.isReceiving != True:
-                time.sleep(0.1)
  
     def getSerialData(self, frame, linesX, linesY, linesZ, lineXValueText, lineYValueText, lineZValueText, lineXLabel, lineYLabel, lineZLabel, timeText):
         currentTimer = time.perf_counter()
@@ -54,41 +41,34 @@ class serialPlot:
         #v= self.rawData.split(",")
 
         try:
-            vitesse, consigne, pwm, kp, ki, end = struct.unpack('fffffc', self.rawData)    # use 'h' for a 2 byte integer
-            print(kp)
-            self.dataX.append(vitesse)    # we get the latest data point and append it to our array
-            self.dataY.append(consigne)
-            self.dataZ.append(pwm)
+            #vitesse, consigne, pwm, kp, ki, end = struct.unpack('fffffc', self.rawData)    # use 'h' for a 2 byte integer
+            #print("Kp: {:3.2f} - Ki: {:3.2f}".format(kp,ki))
+            self.dataX.append(10.0)    # we get the latest data point and append it to our array
+            self.dataY.append(12.0)
+            self.dataZ.append(20.2)
+            self.csvData.append([10.0,12.0,20.2]);
+
+        #print(b1 + ' ' + b2 + ' ' + b3 + ' ' + b4)
+            linesX.set_data(range(self.plotMaxLength), self.dataX)
+            linesY.set_data(range(self.plotMaxLength), self.dataY)
+            linesZ.set_data(range(self.plotMaxLength), self.dataZ)
+
+            lineXValueText.set_text('[' + lineXLabel + '] = ' + '{:3.2f}'.format(vitesse))
+            lineYValueText.set_text('[' + lineYLabel + '] = ' + '{:3.2f}'.format(consigne) )
+            lineZValueText.set_text('[' + lineZLabel + '] = ' + '{:3.0f}'.format(pwm) )
         except:
             print("erreur lecture")
 
-        #print(b1 + ' ' + b2 + ' ' + b3 + ' ' + b4)
-        linesX.set_data(range(self.plotMaxLength), self.dataX)
-        linesY.set_data(range(self.plotMaxLength), self.dataY)
-        linesZ.set_data(range(self.plotMaxLength), self.dataZ)
-
-        lineXValueText.set_text('[' + lineXLabel + '] = ' )
-        lineYValueText.set_text('[' + lineYLabel + '] = ' )
-        lineZValueText.set_text('[' + lineZLabel + '] = ' )
-
-        # self.csvData.append(self.data[-1])
- 
-    def backgroundThread(self):    # retrieve data
-        time.sleep(1.0)  # give some buffer time for retrieving data
-        self.serialConnection.reset_input_buffer()
-        while (self.isRun):
-            self.rawData=self.serialConnection.readline()
-            #self.serialConnection.readinto(self.rawData)
-            self.isReceiving = True
-            #print(self.rawData)
+        #self.csvData.append(5.3)
  
     def close(self):
         self.isRun = False
-        self.thread.join()
-        self.serialConnection.close()
+        #self.thread.join()
+        #self.serialConnection.close()
         print('Disconnected...')
-        # df = pd.DataFrame(self.csvData)
-        # df.to_csv('/home/rikisenia/Desktop/data.csv')
+        df = pd.DataFrame(self.csvData)
+        dfName = datetime.datetime.now().strftime("%Y%m%d-%Hh%Mm%Ss")
+        df.to_csv('./'+dfName+'.csv')
  
  
 def main():
@@ -96,9 +76,9 @@ def main():
     portName = '/dev/ttyUSB0'
     baudRate = 9600
     maxPlotLength = 100
-    dataNumBytes =  22      # number of bytes of 1 data point
+    dataNumBytes =  22     # number of bytes of 1 data point
     s = serialPlot(portName, baudRate, maxPlotLength, dataNumBytes)   # initializes all required variables
-    s.readSerialStart()                                               # starts background thread
+    #s.readSerialStart()                                               # starts background thread
  
     # plotting starts below
     pltInterval = 50    # Period at which the plot animation updates [ms]

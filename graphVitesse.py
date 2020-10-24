@@ -8,6 +8,7 @@ import collections
 import matplotlib.pyplot as plt
 import matplotlib.animation as animation
 import struct
+import datetime
 import pandas as pd
  
  
@@ -27,7 +28,7 @@ class serialPlot:
         self.thread = None
         self.plotTimer = 0
         self.previousTimer = 0
-        # self.csvData = []
+        self.csvData = []
  
         print('Trying to connect to: ' + str(serialPort) + ' at ' + str(serialBaud) + ' BAUD.')
         try:
@@ -54,11 +55,12 @@ class serialPlot:
         #v= self.rawData.split(",")
 
         try:
-            vitesse, consigne, pwm, kp, ki, end = struct.unpack('fffffc', self.rawData)    # use 'h' for a 2 byte integer
-            print("Kp: {:3.2f} - Ki: {:3.2f}".format(kp,ki))
+            vitesse, consigne, pwm, capteur, end = struct.unpack('ffffc', self.rawData)    # use 'h' for a 2 byte integer
+            print("Capteur: {:4.2f}".format(capteur))
             self.dataX.append(vitesse)    # we get the latest data point and append it to our array
             self.dataY.append(consigne)
-            self.dataZ.append(pwm)
+            self.dataZ.append(capteur)
+            self.csvData.append([vitesse,consigne,pwm,capteur]);
 
         #print(b1 + ' ' + b2 + ' ' + b3 + ' ' + b4)
             linesX.set_data(range(self.plotMaxLength), self.dataX)
@@ -67,11 +69,10 @@ class serialPlot:
 
             lineXValueText.set_text('[' + lineXLabel + '] = ' + '{:3.2f}'.format(vitesse))
             lineYValueText.set_text('[' + lineYLabel + '] = ' + '{:3.2f}'.format(consigne) )
-            lineZValueText.set_text('[' + lineZLabel + '] = ' + '{:3.0f}'.format(pwm) )
+            lineZValueText.set_text('[' + lineZLabel + '] = ' + '{:4.2f}'.format(pwm) )
         except:
             print("erreur lecture")
-
-        # self.csvData.append(self.data[-1])
+            self.csvData.append([999.9,999.9,999.9,999.9]);
  
     def backgroundThread(self):    # retrieve data
         time.sleep(1.0)  # give some buffer time for retrieving data
@@ -87,8 +88,9 @@ class serialPlot:
         self.thread.join()
         self.serialConnection.close()
         print('Disconnected...')
-        # df = pd.DataFrame(self.csvData)
-        # df.to_csv('/home/rikisenia/Desktop/data.csv')
+        df = pd.DataFrame(self.csvData)
+        dfName = datetime.datetime.now().strftime("%Y%m%d-%Hh%Mm%Ss")
+        df.to_csv('./'+dfName+'.csv')
  
  
 def main():
