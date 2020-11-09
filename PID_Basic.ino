@@ -29,11 +29,12 @@ const int HX711_sck = 7; //mcu > HX711 sck pin
 //HX711 constructor:
 HX711_ADC LoadCell(HX711_dout, HX711_sck); 
 float THRESHOLD_CAPTEUR = 0.5; 
+float THRESHOLD_CAPTEUR_STOP = -3.0; 
 bool newDataReady = 0;
 
 
 // debug
-const bool debugPython = 1;
+const bool debugPython = 0;
 
 /////////////////////////////////////////////////
 ///////////////// Chrono ////////////////////////
@@ -78,6 +79,7 @@ double sortieMoteur;
 double valeurCapteur, valeurCapteurSeuil;
 double consigneCapteur = 0;
 float pwmMin=100, pwmMax=255;
+int blockIterator = 0;
 
 PID myPID(&valeurCapteurSeuil, &sortieMoteur, &consigneCapteur, Kp, Ki, Kd, REVERSE);
 
@@ -211,6 +213,17 @@ void miseAJourPID()
   moteur.mettreLesGaz(sortieMoteur);
 }
 
+/*
+ * Couper le PWM pendant 100ms et rétablir le PWM
+ */
+void resetPID(){
+  int tmpPWM=sortieMoteur;
+ // sortieMoteur=0;
+  moteur.mettreLesGaz(0);
+  delay(100);
+ // sortieMoteur=tmpPWM;
+}
+
 
 void debugMessage()
 {
@@ -233,6 +246,9 @@ void debugMessage()
   Serial.print("Capteur seuil :");
   Serial.print(valeurCapteurSeuil);
   Serial.print("\t");
+  Serial.print("Moteur state :");
+  Serial.print(moteur.getMoteurState());
+  Serial.print("\t");
   Serial.println();
 }
 
@@ -253,7 +269,6 @@ void updateCell(HX711_ADC &cell, bool &newDataReady, double &valeur){
   // get smoothed value from the dataset:
   if (newDataReady) {
       float i = cell.getData();
-      
       valeur = i;
   }
 }
@@ -302,16 +317,23 @@ void ledPrint(float valeur, float maximum, float seuilNul, float pwm, float pwmM
   }
 
   // pwm
-  int pwmPixNb = (pwm-pwmMin)/(pwmMax-pwmMin)*(NUMPIXELS/2)+NUMPIXELS/2;
-  if(pwm>pwmMin){
-    for(int i = NUMPIXELS/2; i< pwmPixNb; i++){
-       pixels.setPixelColor(i,pixels.Color(0,30,30));
+  if(moteur.getMoteurState()!=STOPPED){
+    int pwmPixNb = (pwm-pwmMin)/(pwmMax-pwmMin)*(NUMPIXELS/2)+NUMPIXELS/2;
+    if(pwm>pwmMin){
+      for(int i = NUMPIXELS/2; i< pwmPixNb; i++){
+         pixels.setPixelColor(i,pixels.Color(0,30,30));
+      }
+    }
+    else{
+      for(int i = NUMPIXELS/2; i< NUMPIXELS; i++){
+         pixels.setPixelColor(i,pixels.Color(30,30,0));
+     }
     }
   }
   else{
-    for(int i = NUMPIXELS/2; i< NUMPIXELS; i++){
-       pixels.setPixelColor(i,pixels.Color(30,30,0));
-   }
+     for(int i = NUMPIXELS/2; i< NUMPIXELS; i++){
+         pixels.setPixelColor(i,pixels.Color(30,0,30));
+     }
   }
   
   pixels.show();
@@ -329,6 +351,7 @@ void loop()
 {
   
   updateCell(LoadCell, newDataReady, valeurCapteur);
+ /*
   if((valeurCapteur<THRESHOLD_CAPTEUR) && valeurCapteur>0){
     valeurCapteurSeuil = 0;
     myPID.SetMode(MANUAL);
@@ -338,7 +361,23 @@ void loop()
     myPID.SetMode(AUTOMATIC);
     valeurCapteurSeuil = valeurCapteur;
   }
-
+  */
+  if((valeurCapteur<THRESHOLD_CAPTEUR) && valeurCapteur>0){
+    valeurCapteurSeuil = 0;
+    //sortieMoteur=pwmMin;
+  }
+  else{
+    valeurCapteurSeuil = valeurCapteur; 
+  }
+  if(valeurCapteur<THRESHOLD_CAPTEUR_STOP){
+    moteur.setMoteurState(STOPPED);
+    valeurCapteurSeuil = 0;
+    myPID.SetMode(MANUAL);
+    sortieMoteur=pwmMin;
+  }
+  else{
+    myPID.SetMode(AUTOMATIC);
+  }
     
   miseAJourPID();
   if(lectureVitesse<2 && valeurCapteurSeuil <= 0)
