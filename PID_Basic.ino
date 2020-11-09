@@ -18,7 +18,7 @@
 
 
 #define LED_PIN 9
-#define NUMPIXELS 8
+#define NUMPIXELS 16
 Adafruit_NeoPixel pixels(NUMPIXELS, LED_PIN, NEO_GRB + NEO_KHZ800);
 
 
@@ -32,6 +32,8 @@ float THRESHOLD_CAPTEUR = 0.5;
 bool newDataReady = 0;
 
 
+// debug
+const bool debugPython = 1;
 
 /////////////////////////////////////////////////
 ///////////////// Chrono ////////////////////////
@@ -75,6 +77,7 @@ double lectureVitesse;
 double sortieMoteur;
 double valeurCapteur, valeurCapteurSeuil;
 double consigneCapteur = 0;
+float pwmMin=100, pwmMax=255;
 
 PID myPID(&valeurCapteurSeuil, &sortieMoteur, &consigneCapteur, Kp, Ki, Kd, REVERSE);
 
@@ -118,7 +121,7 @@ void setup()
 
   //PID
   myPID.SetMode(AUTOMATIC);
-  myPID.SetOutputLimits(130, 230);
+  myPID.SetOutputLimits(pwmMin, pwmMax);
   myPID.SetSampleTime(100);
   consigneVitesse = 10;
 
@@ -134,6 +137,7 @@ void setup()
   LoadCell.start(stabilizingtime, _tare);
   if (LoadCell.getTareTimeoutFlag()) {
     Serial.println("Timeout, check MCU>HX711 wiring and pin designations");
+    ledFail();
     while (1);
   }
   else {
@@ -203,6 +207,7 @@ void miseAJourPID()
   //lectureVitesse = vitesseInstantanee;
   if(!haltFlag)
     myPID.Compute();
+  
   moteur.mettreLesGaz(sortieMoteur);
 }
 
@@ -222,8 +227,11 @@ void debugMessage()
   Serial.print("sortie Moteur :");
   Serial.print(sortieMoteur);
   Serial.print("\t");
-  Serial.print("Ki :");
-  Serial.print(Ki);
+  Serial.print("Capteur :");
+  Serial.print(valeurCapteur);
+  Serial.print("\t");
+  Serial.print("Capteur seuil :");
+  Serial.print(valeurCapteurSeuil);
   Serial.print("\t");
   Serial.println();
 }
@@ -259,21 +267,22 @@ void ledWelcome()
     pixels.clear();
     pixels.setPixelColor(i, pixels.Color(0, 0, 3));
     pixels.show();
-    delay(100);
+    delay(30);
   }
   for (int i = NUMPIXELS; i > -1; i--)
   {
     pixels.clear();
     pixels.setPixelColor(i, pixels.Color(0, 0, 3));
     pixels.show();
-    delay(100);
+    delay(30);
   }
 }
 
 
-void ledPrint(float valeur, float maximum, float seuilNul){
+void ledPrint(float valeur, float maximum, float seuilNul, float pwm, float pwmMin, float pwmMax){
   pixels.clear();
-  int pixNb = abs(valeur/maximum)*NUMPIXELS;
+  // capteur
+  int pixNb = abs(valeur/maximum)*NUMPIXELS/2;
   if(seuilNul - abs(valeur) > 0){
     // pas de mouvement
     pixels.setPixelColor(3,pixels.Color(0,0,30));
@@ -291,6 +300,20 @@ void ledPrint(float valeur, float maximum, float seuilNul){
        pixels.setPixelColor(i,pixels.Color(30,0,0));
     }
   }
+
+  // pwm
+  int pwmPixNb = (pwm-pwmMin)/(pwmMax-pwmMin)*(NUMPIXELS/2)+NUMPIXELS/2;
+  if(pwm>pwmMin){
+    for(int i = NUMPIXELS/2; i< pwmPixNb; i++){
+       pixels.setPixelColor(i,pixels.Color(0,30,30));
+    }
+  }
+  else{
+    for(int i = NUMPIXELS/2; i< NUMPIXELS; i++){
+       pixels.setPixelColor(i,pixels.Color(30,30,0));
+   }
+  }
+  
   pixels.show();
 }
 
@@ -306,29 +329,41 @@ void loop()
 {
   
   updateCell(LoadCell, newDataReady, valeurCapteur);
-  if(abs(valeurCapteur)<THRESHOLD_CAPTEUR)
+  if((valeurCapteur<THRESHOLD_CAPTEUR) && valeurCapteur>0){
     valeurCapteurSeuil = 0;
-  else
+    myPID.SetMode(MANUAL);
+    //sortieMoteur=pwmMin;
+  }
+  else{
+    myPID.SetMode(AUTOMATIC);
     valeurCapteurSeuil = valeurCapteur;
+  }
+
     
   miseAJourPID();
-  moteur.setMoteurState(SPINNING);
+  if(lectureVitesse<2 && valeurCapteurSeuil <= 0)
+    moteur.setMoteurState(STOPPED);
+  else
+    moteur.setMoteurState(SPINNING);
   if(newDataReady){
     //rafraichissement toutes les 100ms environ
     newDataReady=0;
-    ledPrint(valeurCapteur,10.0,0.3);
+    ledPrint(valeurCapteur,10.0,0.3,sortieMoteur,pwmMin,pwmMax);
   }
- // else 
- //   ledFail();
 
-  envoi(moteur.getVitesse());
-  envoi(consigneVitesse);
-  envoi(sortieMoteur);
-  envoi(valeurCapteur);
-  envoiFin();
+
+
   
-  //if(consigneVitesse)
-  //  envoiVitesse(moteur.getVitesse());
-  //  Serial.println(moteur.getVitesse());
-  //debugMessage();
+  if(debugPython){
+  
+    envoi(moteur.getVitesse());
+    envoi(consigneVitesse);
+    envoi(sortieMoteur);
+    envoi(valeurCapteur);
+    envoiFin();
+  }
+  else
+    debugMessage();
+  
+ 
 }

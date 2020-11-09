@@ -22,6 +22,7 @@ class serialPlot:
         self.dataX = collections.deque([0] * plotLength, maxlen=plotLength)
         self.dataY = collections.deque([0] * plotLength, maxlen=plotLength)
         self.dataZ = collections.deque([0] * plotLength, maxlen=plotLength)
+        self.dataA = collections.deque([0] * plotLength, maxlen=plotLength)
 
         self.isRun = True
         self.isReceiving = False
@@ -45,7 +46,7 @@ class serialPlot:
             while self.isReceiving != True:
                 time.sleep(0.1)
  
-    def getSerialData(self, frame, linesX, linesY, linesZ, lineXValueText, lineYValueText, lineZValueText, lineXLabel, lineYLabel, lineZLabel, timeText):
+    def getSerialData(self, frame, linesX, linesY, linesZ, linesA, lineXValueText, lineYValueText, lineZValueText, lineAValueText, lineXLabel, lineYLabel, lineZLabel, lineALabel, timeText):
         currentTimer = time.perf_counter()
         self.plotTimer = int((currentTimer - self.previousTimer) * 1000)     # the first reading will be erroneous
         self.previousTimer = currentTimer
@@ -56,23 +57,26 @@ class serialPlot:
 
         try:
             vitesse, consigne, pwm, capteur, end = struct.unpack('ffffc', self.rawData)    # use 'h' for a 2 byte integer
-            print("Capteur: {:4.2f}".format(capteur))
+            print("Capteur: {:4.2f} - PWM: {:3.0f} - vitesse: {:4.2f}".format(capteur,pwm,vitesse))
             self.dataX.append(vitesse)    # we get the latest data point and append it to our array
             self.dataY.append(consigne)
             self.dataZ.append(capteur)
+            self.dataA.append(pwm)
             self.csvData.append([vitesse,consigne,pwm,capteur]);
 
         #print(b1 + ' ' + b2 + ' ' + b3 + ' ' + b4)
             linesX.set_data(range(self.plotMaxLength), self.dataX)
             linesY.set_data(range(self.plotMaxLength), self.dataY)
             linesZ.set_data(range(self.plotMaxLength), self.dataZ)
+            linesA.set_data(range(self.plotMaxLength), self.dataA)
 
             lineXValueText.set_text('[' + lineXLabel + '] = ' + '{:3.2f}'.format(vitesse))
             lineYValueText.set_text('[' + lineYLabel + '] = ' + '{:3.2f}'.format(consigne) )
-            lineZValueText.set_text('[' + lineZLabel + '] = ' + '{:4.2f}'.format(pwm) )
+            lineZValueText.set_text('[' + lineZLabel + '] = ' + '{:4.2f}'.format(capteur) )
+            lineAValueText.set_text('[' + lineZLabel + '] = ' + '{:3.0f}'.format(pwm) )
         except:
             print("erreur lecture")
-            self.csvData.append([999.9,999.9,999.9,999.9]);
+            self.csvData.append([0,0,0,0]);
  
     def backgroundThread(self):    # retrieve data
         time.sleep(1.0)  # give some buffer time for retrieving data
@@ -116,17 +120,20 @@ def main():
  
     lineXLabel = 'Vitesse'
     lineYLabel = 'Consigne'
-    lineZLabel = 'PWM'
+    lineZLabel = 'Capteur'
+    lineALabel = 'PWM'
 
     timeText = ax.text(0.50, 0.95, '', transform=ax.transAxes)
     linesX = ax.plot([], [], label=lineXLabel)[0]
     linesY = ax.plot([], [], label=lineYLabel)[0]
     linesZ = ax.plot([], [], label=lineZLabel)[0]
+    linesA = ax.plot([], [], label=lineALabel)[0]
     lineXValueText = ax.text(0.50, 0.90, '', transform=ax.transAxes)
     lineYValueText = ax.text(0.50, 0.85, '', transform=ax.transAxes)
     lineZValueText = ax.text(0.50, 0.80, '', transform=ax.transAxes)
+    lineAValueText = ax.text(0.50, 0.75, '', transform=ax.transAxes)
 
-    anim = animation.FuncAnimation(fig, s.getSerialData, fargs=(linesX, linesY, linesZ, lineXValueText, lineYValueText, lineZValueText, lineXLabel, lineYLabel, lineZLabel, timeText), interval=pltInterval)    # fargs has to be a tuple
+    anim = animation.FuncAnimation(fig, s.getSerialData, fargs=(linesX, linesY, linesZ, linesA, lineXValueText, lineYValueText, lineZValueText, lineAValueText, lineXLabel, lineYLabel, lineZLabel,lineALabel, timeText), interval=pltInterval)    # fargs has to be a tuple
  
     plt.legend(loc="upper left")
     plt.grid(which='major')
