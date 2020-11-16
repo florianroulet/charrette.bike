@@ -33,24 +33,20 @@ float THRESHOLD_CAPTEUR_STOP = -2.0;
 bool newDataReady = 0;
 
 
+// frein à inertie
+const int frein = 2;
+Chrono chronoFrein; 
+bool freinFlag = 0;
+
+
 // debug
-const bool debugPython = 0;
-
-/////////////////////////////////////////////////
-///////////////// Chrono ////////////////////////
-/////////////////////////////////////////////////
-
-// Instanciate a Chrono object.
-Chrono myChrono; 
-
+const bool debugPython = 1;
 
 /////////////////////////////////////////////////
 /////////////// Moteur //////////////////////////
 /////////////////////////////////////////////////
 
 Moteur moteur = Moteur();
-
-
 
 /////////////////////////////////////////////////
 ///////////////// PID ///////////////////////////
@@ -79,7 +75,7 @@ double sortieMoteur;
 double valeurCapteur, valeurCapteurSeuil;
 double consigneCapteur = 0;
 float pwmMin=100, pwmMax=255;
-int blockIterator = 0;
+Chrono resetPID;
 
 PID myPID(&valeurCapteurSeuil, &sortieMoteur, &consigneCapteur, Kp, Ki, Kd, REVERSE);
 
@@ -113,6 +109,9 @@ void setup()
   pinMode(plus, INPUT_PULLUP);
   pinMode(moins, INPUT_PULLUP);
   pinMode(halt, INPUT_PULLUP);
+  pinMode(frein, INPUT_PULLUP);
+  chronoFrein.stop();
+  attachPCINT(digitalPinToPCINT(frein),freinage, CHANGE);
   attachPCINT(digitalPinToPCINT(plus),pluss, CHANGE);
   attachPCINT(digitalPinToPCINT(moins),moinss, CHANGE);
   attachPCINT(digitalPinToPCINT(halt),haltt, CHANGE);
@@ -163,6 +162,12 @@ void interruptV()
   moteur.interruptV();
 }
 
+void freinage(){
+  if(!digitalRead(frein))
+    freinFlag=1;
+  else
+    freinFlag=0;
+}
 void pluss(){
   
   if(!digitalRead(plus)){
@@ -212,18 +217,6 @@ void miseAJourPID()
   
   moteur.mettreLesGaz(sortieMoteur);
 }
-
-/*
- * Couper le PWM pendant 100ms et rétablir le PWM
- */
-void resetPID(){
-  int tmpPWM=sortieMoteur;
- // sortieMoteur=0;
-  moteur.mettreLesGaz(0);
-  delay(100);
- // sortieMoteur=tmpPWM;
-}
-
 
 void debugMessage()
 {
