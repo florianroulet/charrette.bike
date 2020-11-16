@@ -29,7 +29,7 @@ const int HX711_sck = 7; //mcu > HX711 sck pin
 //HX711 constructor:
 HX711_ADC LoadCell(HX711_dout, HX711_sck); 
 float THRESHOLD_CAPTEUR = 0.5; 
-float THRESHOLD_CAPTEUR_STOP = -3.0; 
+float THRESHOLD_CAPTEUR_STOP = -2.0; 
 bool newDataReady = 0;
 
 
