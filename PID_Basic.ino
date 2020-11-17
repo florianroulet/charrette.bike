@@ -6,20 +6,12 @@
 #include <PID_v1.h>
 #include <Chrono.h> 
 #include "moteur.h"
+#include "led.h"
 #include <SoftFilters.h>
 #include <HX711_ADC.h>
 #include "PinChangeInterrupt.h"
 
-//LEDs
-#include <Adafruit_NeoPixel.h>
-#ifdef __AVR__
-#include <avr/power.h> // Required for 16 MHz Adafruit Trinket
-#endif
 
-
-#define LED_PIN 9
-#define NUMPIXELS 16
-Adafruit_NeoPixel pixels(NUMPIXELS, LED_PIN, NEO_GRB + NEO_KHZ800);
 
 
 // Capteur
@@ -42,6 +34,8 @@ bool freinFlag = 0;
 
 // debug
 const bool debugPython = 1;
+
+
 
 /////////////////////////////////////////////////
 /////////////// Moteur //////////////////////////
@@ -76,6 +70,8 @@ double sortieMoteur;
 double valeurCapteur, valeurCapteurSeuil;
 double consigneCapteur = 0;
 float pwmMin=100, pwmMax=255;
+float maxTraction = 10.0;
+float seuilTractionNulle = 0.3;
 Chrono resetPID;
 
 PID myPID(&valeurCapteurSeuil, &sortieMoteur, &consigneCapteur, Kp, Ki, Kd, REVERSE);
@@ -92,11 +88,21 @@ int moins = 4;
 int halt = 5;
 bool haltFlag=0;
 
+
+
+/////////////////////////////////////////////////
+///////////////// LED  //////////////////////////
+/////////////////////////////////////////////////
+
+  Led led = Led(maxTraction,seuilTractionNulle,pwmMin,pwmMax);
+
+
 /////////////////////////////////////////////////
 //////////////////// Graph //////////////////////
 /////////////////////////////////////////////////
 
-float test = 23.14;
+float test = 0;
+float test2 = 100;
 
 /////////////////////////////////////////////////
 /////////////////////////////////////////////////
@@ -130,10 +136,10 @@ void setup()
   myPID.SetSampleTime(100);
   consigneVitesse = 10;
 
+  //led
 
-  // diodes
-  pixels.begin();
 
+/*
   
   //capteur
    LoadCell.begin();
@@ -145,15 +151,21 @@ void setup()
   LoadCell.start(stabilizingtime, _tare);
   if (LoadCell.getTareTimeoutFlag()) {
     Serial.println("Timeout, check MCU>HX711 wiring and pin designations");
-    ledFail();
+    led.ledFail(0);
     while (1);
   }
   else {
     LoadCell.setCalFactor(calibrationValue); // set calibration value (float)
     Serial.println("Startup is complete");
-    ledWelcome();
+    led.ledWelcome();
   }
 
+*/
+  if(led.ledWelcome()){
+    Serial.println("prout");
+  }
+  else
+    Serial.println("marche oas");
   
 }
 
@@ -183,18 +195,23 @@ void freinage(){
   }
 }
 void pluss(){
-  
+  test+=1.0;
+  /*
   if(!digitalRead(plus)){
     if(consigneVitesse==0)
       consigneVitesse=10;
     else if(consigneVitesse <= 25)
       consigneVitesse+=2;
  
-  }
+  }*/
 }
 void moinss(){
+  test2+=10.0;
+  test-=0.5;
+  /*
   if(!digitalRead(moins) && consigneVitesse>=2)
     consigneVitesse-=2;
+    */
 }
 /*
 void pluss(){
@@ -291,82 +308,14 @@ void updateCell(HX711_ADC &cell, bool &newDataReady, double &valeur){
 }
 
 
-
-void ledWelcome()
-{
-  for (int i = 0; i < NUMPIXELS; i++)
-  {
-    pixels.clear();
-    pixels.setPixelColor(i, pixels.Color(0, 0, 3));
-    pixels.show();
-    delay(30);
-  }
-  for (int i = NUMPIXELS; i > -1; i--)
-  {
-    pixels.clear();
-    pixels.setPixelColor(i, pixels.Color(0, 0, 3));
-    pixels.show();
-    delay(30);
-  }
-}
-
-
-void ledPrint(float valeur, float maximum, float seuilNul, float pwm, float pwmMin, float pwmMax){
-  pixels.clear();
-  // capteur
-  int pixNb = abs(valeur/maximum)*NUMPIXELS/2;
-  if(seuilNul - abs(valeur) > 0){
-    // pas de mouvement
-    pixels.setPixelColor(3,pixels.Color(0,0,30));
-    pixels.setPixelColor(4,pixels.Color(0,0,30));
-  }
-  else if(valeur>0){
-    // traction
-    for(int i = 0; i< pixNb; i++){
-       pixels.setPixelColor(i,pixels.Color(0,30,0));
-    }
-  }
-  else{
-    // compression
-    for(int i = 0; i< pixNb; i++){
-       pixels.setPixelColor(i,pixels.Color(30,0,0));
-    }
-  }
-
-  // pwm
-  if(moteur.getMoteurState()!=STOPPED){
-    int pwmPixNb = (pwm-pwmMin)/(pwmMax-pwmMin)*(NUMPIXELS/2)+NUMPIXELS/2;
-    if(pwm>pwmMin){
-      for(int i = NUMPIXELS/2; i< pwmPixNb; i++){
-         pixels.setPixelColor(i,pixels.Color(0,30,30));
-      }
-    }
-    else{
-      for(int i = NUMPIXELS/2; i< NUMPIXELS; i++){
-         pixels.setPixelColor(i,pixels.Color(30,30,0));
-     }
-    }
-  }
-  else{
-     for(int i = NUMPIXELS/2; i< NUMPIXELS; i++){
-         pixels.setPixelColor(i,pixels.Color(30,0,30));
-     }
-  }
-  
-  pixels.show();
-}
-
-void ledFail(){
-  pixels.clear();
-  for(int i = 2; i< NUMPIXELS-2; i++){
-     pixels.setPixelColor(i,pixels.Color(30,30,30));
-  }
-  pixels.show();
-}
-
 void loop()
 {
 
+  led.ledPrint(test,test2);
+  Serial.print(test);
+  Serial.print(" - ");
+  Serial.println(test2);
+/*
   miseAJourVitesse();
   
   // lecture du capteur de force
@@ -408,7 +357,7 @@ void loop()
     
     miseAJourPID();
     newDataReady=0;
-    ledPrint(valeurCapteur,10.0,0.3,sortieMoteur,pwmMin,pwmMax);
+    led.ledPrint(valeurCapteur,sortieMoteur);
   }
   
   moteur.mettreLesGaz(sortieMoteur);
@@ -426,6 +375,6 @@ void loop()
   }
   else
     debugMessage();
-  
+  */
  
 }
