@@ -37,6 +37,7 @@ bool newDataReady = 0;
 const int frein = 2;
 Chrono chronoFrein; 
 bool freinFlag = 0;
+#define FREIN_TIMEOUT 1000
 
 
 // debug
@@ -104,18 +105,21 @@ float test = 23.14;
 void setup()
 {
   Serial.begin(9600);
-  //moteur
-  
+
+  // interrupteur sur la carte
   pinMode(plus, INPUT_PULLUP);
   pinMode(moins, INPUT_PULLUP);
   pinMode(halt, INPUT_PULLUP);
-  pinMode(frein, INPUT_PULLUP);
-  chronoFrein.stop();
-  attachPCINT(digitalPinToPCINT(frein),freinage, CHANGE);
   attachPCINT(digitalPinToPCINT(plus),pluss, CHANGE);
   attachPCINT(digitalPinToPCINT(moins),moinss, CHANGE);
   attachPCINT(digitalPinToPCINT(halt),haltt, CHANGE);
 
+  // freinage inertiel
+  pinMode(frein, INPUT_PULLUP);
+  chronoFrein.stop();
+  attachPCINT(digitalPinToPCINT(frein),freinage, CHANGE);
+
+  // lecture vitesse
   attachPCINT(digitalPinToPCINT(moteur.getUPin()),interruptU, CHANGE);
   attachPCINT(digitalPinToPCINT(moteur.getVPin()),interruptV, CHANGE);
   
@@ -127,7 +131,10 @@ void setup()
   consigneVitesse = 10;
 
 
+  // diodes
   pixels.begin();
+
+  
   //capteur
    LoadCell.begin();
   float calibrationValue; // calibration value (see example file "Calibration.ino")
@@ -146,10 +153,12 @@ void setup()
     Serial.println("Startup is complete");
     ledWelcome();
   }
+
+  
 }
 
 /*
- * interruption Hall
+ * interruptions
  */
 
 void interruptU()
@@ -162,11 +171,16 @@ void interruptV()
   moteur.interruptV();
 }
 
+
 void freinage(){
-  if(!digitalRead(frein))
-    freinFlag=1;
-  else
-    freinFlag=0;
+  if(!digitalRead(frein) && !chronoFrein.isRunning()){
+      myPID.SetMode(MANUAL);
+      chronoFrein.start();
+  }
+  else if (digitalRead(frein) && chronoFrein.isRunning()){
+      myPID.SetMode(AUTOMATIC);
+      chronoFrein.stop();
+  }
 }
 void pluss(){
   
@@ -205,17 +219,24 @@ void haltt(){
    }
 }
 
-void miseAJourPID()
-{
+
+
+/*
+ * Fonctions annexes
+ */
+
+void miseAJourVitesse(){
   moteur.calculerVitesse();
   vitesseInstantanee = moteur.getVitesse();
   vitesseFiltree.push(&vitesseInstantanee, &vitesseMoyenne);
   lectureVitesse = vitesseMoyenne;
+}
+
+void miseAJourPID()
+{
   //lectureVitesse = vitesseInstantanee;
   if(!haltFlag)
     myPID.Compute();
-  
-  moteur.mettreLesGaz(sortieMoteur);
 }
 
 void debugMessage()
@@ -241,6 +262,9 @@ void debugMessage()
   Serial.print("\t");
   Serial.print("Moteur state :");
   Serial.print(moteur.getMoteurState());
+  Serial.print("\t");
+  Serial.print("chrono :");
+  Serial.print(chronoFrein.isRunning());
   Serial.print("\t");
   Serial.println();
 }
@@ -342,19 +366,13 @@ void ledFail(){
 
 void loop()
 {
+
+  miseAJourVitesse();
   
+  // lecture du capteur de force
   updateCell(LoadCell, newDataReady, valeurCapteur);
- /*
-  if((valeurCapteur<THRESHOLD_CAPTEUR) && valeurCapteur>0){
-    valeurCapteurSeuil = 0;
-    myPID.SetMode(MANUAL);
-    //sortieMoteur=pwmMin;
-  }
-  else{
-    myPID.SetMode(AUTOMATIC);
-    valeurCapteurSeuil = valeurCapteur;
-  }
-  */
+
+  // si valeur capteur inférieur à un seuil mais positive, comme si c'était 0.
   if((valeurCapteur<THRESHOLD_CAPTEUR) && valeurCapteur>0){
     valeurCapteurSeuil = 0;
     //sortieMoteur=pwmMin;
@@ -362,6 +380,15 @@ void loop()
   else{
     valeurCapteurSeuil = valeurCapteur; 
   }
+
+
+  if(chronoFrein.isRunning() && chronoFrein.hasPassed(FREIN_TIMEOUT)){
+    chronoFrein.stop();
+    //moteur.setMoteurState(BRAKING);
+    //Serial.println("prout");
+  }
+
+  // si valeur capteur inférieure à un seuil précis, on arrête tout.
   if(valeurCapteur<THRESHOLD_CAPTEUR_STOP){
     moteur.setMoteurState(STOPPED);
     valeurCapteurSeuil = 0;
@@ -372,16 +399,19 @@ void loop()
     myPID.SetMode(AUTOMATIC);
   }
     
-  miseAJourPID();
   if(lectureVitesse<2 && valeurCapteurSeuil <= 0)
     moteur.setMoteurState(STOPPED);
   else
     moteur.setMoteurState(SPINNING);
   if(newDataReady){
     //rafraichissement toutes les 100ms environ
+    
+    miseAJourPID();
     newDataReady=0;
     ledPrint(valeurCapteur,10.0,0.3,sortieMoteur,pwmMin,pwmMax);
   }
+  
+  moteur.mettreLesGaz(sortieMoteur);
 
 
 
