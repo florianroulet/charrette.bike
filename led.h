@@ -14,16 +14,17 @@
 typedef enum
 {
   TRACTION_PBLM = 0b00,  //  mauvaise initialisation de la barre de traction
-  CTRL_PBLM = 0b01 //  problème de contrôleur
+  CTRL_PBLM = 0b01, //  problème de contrôleur
+  OTHER = 0b10,
 } error_state_t;
 
 typedef enum
 {
-  INIT = 0b00,  
-  SPIN = 0b01, 
-  STATUQUO = 0b10,
-  DECCELERATE = 0b11,
-  BRAKE = 0b100
+  LED_INIT = 0b00,  
+  LED_SPIN = 0b01, 
+  LED_STATUQUO = 0b10,
+  LED_DECCELERATE = 0b11,
+  LED_BRAKE = 0b100
 } state_machine_t;
 
 

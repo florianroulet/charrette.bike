@@ -1,11 +1,6 @@
-/********************************************************
- * PID Basic Example
- * Reading analog input 0 to control analog PWM output 3
- ********************************************************/
-
-#include <PID_v1.h>
-#include <Chrono.h> 
+#include <Chrono.h>
 #include "moteur.h"
+#include <PID_v1.h>
 #include "led.h"
 #include <SoftFilters.h>
 #include <HX711_ADC.h>
@@ -14,26 +9,41 @@
 
 
 
-// Capteur
+
+/////////////////////////////////////////////////
+/////////////// capteur force ///////////////////
+/////////////////////////////////////////////////
+
 const int HX711_dout = 8; //mcu > HX711 dout pin
 const int HX711_sck = 7; //mcu > HX711 sck pin
-
-//HX711 constructor:
-HX711_ADC LoadCell(HX711_dout, HX711_sck); 
-float THRESHOLD_CAPTEUR = 0.5; 
-float THRESHOLD_CAPTEUR_STOP = -2.0; 
+HX711_ADC LoadCell(HX711_dout, HX711_sck);
+double valeurCapteur_;
+float THRESHOLD_CAPTEUR = 0.5;
+float THRESHOLD_CAPTEUR_STOP = -2.0;
 bool newDataReady = 0;
+bool capteurInitialise = 0;
 
 
-// frein à inertie
-const int frein = 2;
-Chrono chronoFrein; 
+/////////////////////////////////////////////////
+/////////////// Debug ///////////////////////////
+/////////////////////////////////////////////////
+
+const bool debugPython = 0;
+const bool debug = 1;
+
+
+/////////////////////////////////////////////////
+/////////////// Frein à inertie /////////////////
+/////////////////////////////////////////////////
+
+
+const int frein = debug?5:2;
+Chrono chronoFrein;
 bool freinFlag = 0;
-#define FREIN_TIMEOUT 1000
+int t1 = 300;
+int t2 = 1000;
+int t3 = 1500;
 
-
-// debug
-const bool debugPython = 1;
 
 
 
@@ -47,66 +57,84 @@ Moteur moteur = Moteur();
 ///////////////// PID ///////////////////////////
 /////////////////////////////////////////////////
 
-
-
-//https://en.wikipedia.org/wiki/PID_controller
-//Ku a vide = 15
-//Tu a vide = 1,675s
-// -> Kp = 0.6*Ku
-// -> Ki = 0.5*Ku/Tu
-// -> Kd = 3*Ku*Tu/40
-
-//10 4.5 1.88
-
-#define Ku 15
-#define Tu 1.5
 double Kp = 6.5, Ki = 3.25, Kd = 0.1;
-//double Kp = 3, Ki = 0, Kd = 0;
 
-
-double consigneVitesse;
-double lectureVitesse;
-double sortieMoteur;
-double valeurCapteur, valeurCapteurSeuil;
-double consigneCapteur = 0;
-float pwmMin=100, pwmMax=255;
-float maxTraction = 10.0;
-float seuilTractionNulle = 0.3;
+double sortieMoteur;    //output
+double valeurCapteur;   //input (valeurCapteur_ mais = 0 si < à un seuil
+double consigneCapteur = 0; //setpoint
+float pwmMin = 100, pwmMax = 255;
 Chrono resetPID;
 
-PID myPID(&valeurCapteurSeuil, &sortieMoteur, &consigneCapteur, Kp, Ki, Kd, REVERSE);
+PID myPID(&valeurCapteur, &sortieMoteur, &consigneCapteur, Kp, Ki, Kd, REVERSE);
 
 
-//calcul vitesse moyenne
+
+/////////////////////////////////////////////////
+//////////// Vitesse moyenne ///////////////////
+/////////////////////////////////////////////////
+
 MovingAverageFilter<double, double> vitesseFiltree(4);
 double vitesseMoyenne;
 double vitesseInstantanee;
 
 
+
+/////////////////////////////////////////////////
+///////////// Pin interrupteur debug ////////////
+/////////////////////////////////////////////////
+
 int plus = 3;
 int moins = 4;
 int halt = 5;
-bool haltFlag=0;
+bool haltFlag = 0;
 
 
+/////////////////////////////////////////////////
+///////////// Pin controleur ////////////////////
+/////////////////////////////////////////////////
+
+int ctrlAlive = 12;
+int ctrlSwitch = 13;
+bool isCtrlAlive = 0;
+
+
+float test = 0;
+float test2 = 100;
 
 /////////////////////////////////////////////////
 ///////////////// LED  //////////////////////////
 /////////////////////////////////////////////////
 
-  Led led = Led(maxTraction,seuilTractionNulle,pwmMin,pwmMax);
+float maxTraction = 10.0;
+float seuilTractionNulle = 0.3;
+
+Led led = Led(maxTraction, seuilTractionNulle, pwmMin, pwmMax);
 
 
 /////////////////////////////////////////////////
 //////////////////// Graph //////////////////////
 /////////////////////////////////////////////////
 
-float test = 0;
-float test2 = 100;
 
 /////////////////////////////////////////////////
+//////////////// Etats //////////////////////////
 /////////////////////////////////////////////////
-/////////////////////////////////////////////////
+
+enum etats_enum {INITIALISATION,
+                 ATTENTE,
+                 ROULE,
+                 STATU_QUO,
+                 DECCELERATION,
+                 FREINAGE
+                };
+
+uint8_t etat = INITIALISATION;
+
+
+float alpha = 1.0;
+float beta = -2.0;
+float gamma = -5.0;
+
 
 void setup()
 {
@@ -116,62 +144,126 @@ void setup()
   pinMode(plus, INPUT_PULLUP);
   pinMode(moins, INPUT_PULLUP);
   pinMode(halt, INPUT_PULLUP);
-  attachPCINT(digitalPinToPCINT(plus),pluss, CHANGE);
-  attachPCINT(digitalPinToPCINT(moins),moinss, CHANGE);
-  attachPCINT(digitalPinToPCINT(halt),haltt, CHANGE);
+  attachPCINT(digitalPinToPCINT(plus), pluss, CHANGE);
+  attachPCINT(digitalPinToPCINT(moins), moinss, CHANGE);
+  attachPCINT(digitalPinToPCINT(halt), haltt, CHANGE);
 
   // freinage inertiel
   pinMode(frein, INPUT_PULLUP);
   chronoFrein.stop();
-  attachPCINT(digitalPinToPCINT(frein),freinage, CHANGE);
+  attachPCINT(digitalPinToPCINT(frein), freinage, CHANGE);
 
   // lecture vitesse
-  attachPCINT(digitalPinToPCINT(moteur.getUPin()),interruptU, CHANGE);
-  attachPCINT(digitalPinToPCINT(moteur.getVPin()),interruptV, CHANGE);
-  
+  attachPCINT(digitalPinToPCINT(moteur.getUPin()), interruptU, CHANGE);
+  attachPCINT(digitalPinToPCINT(moteur.getVPin()), interruptV, CHANGE);
+
 
   //PID
-  myPID.SetMode(AUTOMATIC);
+  myPID.SetMode(MANUAL);
   myPID.SetOutputLimits(pwmMin, pwmMax);
   myPID.SetSampleTime(100);
-  consigneVitesse = 10;
 
-  //led
+  // Controleur
+  pinMode(ctrlAlive, INPUT);
+  pinMode(ctrlSwitch, OUTPUT);
+  attachPCINT(digitalPinToPCINT(ctrlAlive),interruptCtrlAlive,CHANGE);
 
-
-/*
   
-  //capteur
-   LoadCell.begin();
-  float calibrationValue; // calibration value (see example file "Calibration.ino")
-  calibrationValue = 10174.09; // uncomment this if you want to set the calibration value in the sketch
   
-  long stabilizingtime = 2000; // preciscion right after power-up can be improved by adding a few seconds of stabilizing time
-  boolean _tare = true; //set this to false if you don't want tare to be performed in the next step
-  LoadCell.start(stabilizingtime, _tare);
-  if (LoadCell.getTareTimeoutFlag()) {
-    Serial.println("Timeout, check MCU>HX711 wiring and pin designations");
-    led.ledFail(0);
-    while (1);
-  }
-  else {
-    LoadCell.setCalFactor(calibrationValue); // set calibration value (float)
-    Serial.println("Startup is complete");
-    led.ledWelcome();
-  }
+  led.ledWelcome();
 
-*/
-  if(led.ledWelcome()){
-    Serial.println("prout");
-  }
-  else
-    Serial.println("marche oas");
-  
+
 }
 
+
+
+void loop()
+{
+  miseAJourVitesse();
+  if(capteurInitialise)
+    updateCell(LoadCell, newDataReady, valeurCapteur_);
+
+    if(etat == INITIALISATION){
+      led.ledState(etat);
+      moteur.setMoteurState(STOPPED);
+      if(initialisationCapteur() && vitesseMoyenne == 0 ){
+        etat = ATTENTE;
+      }
+    }
+    else if( etat == ATTENTE){
+
+      myPID.SetMode(MANUAL); 
+      led.ledState(etat);
+      moteur.setMoteurState(STOPPED);
+      if(valeurCapteur>alpha)
+        etat = ROULE;
+      else if(valeurCapteur < gamma || chronoFrein.elapsed()>t1)
+        etat = FREINAGE;
+    }
+    else if(etat == ROULE){
+
+      moteur.setMoteurState(SPINNING);
+      myPID.SetMode(AUTOMATIC);
+      miseAJourPID();
+      led.ledPrint(valeurCapteur,sortieMoteur);
+      if((valeurCapteur==0 || chronoFrein.elapsed()>t1) && vitesseMoyenne > 0)
+        etat = STATU_QUO;
+    }
+    else if ( etat == STATU_QUO){
+
+      led.ledState(etat);
+      myPID.SetMode(MANUAL);
+      if(valeurCapteur > alpha && !chronoFrein.isRunning())
+        etat=ROULE;
+      else if((valeurCapteur<0 && valeurCapteur>beta ) || chronoFrein.elapsed()>t2)
+        etat = DECCELERATION;
+    }
+    else if( etat == DECCELERATION){
+
+      led.ledState(etat);
+      moteur.setMoteurState(STOPPED);
+      sortieMoteur=pwmMin;
+      if(valeurCapteur > alpha && !chronoFrein.isRunning())
+        etat = ROULE;
+      else if(valeurCapteur < gamma || chronoFrein.elapsed()>t3)
+        etat = FREINAGE;
+    }
+    else if(etat == FREINAGE){
+
+      led.ledState(etat);
+      moteur.setMoteurState(BRAKING);
+      if(valeurCapteur > alpha && !chronoFrein.isRunning())
+        etat = ROULE;
+      else if(!chronoFrein.isRunning() && vitesseMoyenne == 0 && valeurCapteur == 0)
+        etat = ATTENTE;
+    }
+    else{
+
+      led.ledFail(OTHER);
+    }
+
+
+  if (debugPython) {
+
+    envoi(moteur.getVitesse());
+    envoi(sortieMoteur);
+    envoi(valeurCapteur);
+    envoiFin();
+  }
+  else
+    debugMessage();
+
+
+  moteur.mettreLesGaz(sortieMoteur);
+
+
+}
+
+
+
 /*
- * interruptions
- */
+   interruptions
+*/
 
 void interruptU()
 {
@@ -182,77 +274,106 @@ void interruptV()
 {
   moteur.interruptV();
 }
+void interruptCtrlAlive()
+{
+  if(digitalRead(ctrlAlive))
+    isCtrlAlive=0;
+  else
+    isCtrlAlive=1;
+}
 
 
-void freinage(){
-  if(!digitalRead(frein) && !chronoFrein.isRunning()){
-      myPID.SetMode(MANUAL);
-      chronoFrein.start();
+void freinage() {
+  if (!digitalRead(frein) && !chronoFrein.isRunning()) {
+    chronoFrein.start();
   }
-  else if (digitalRead(frein) && chronoFrein.isRunning()){
-      myPID.SetMode(AUTOMATIC);
-      chronoFrein.stop();
+  else if (digitalRead(frein) && chronoFrein.isRunning()) {
+    chronoFrein.restart();
+    chronoFrein.stop();
   }
-}
-void pluss(){
-  test+=1.0;
-  /*
-  if(!digitalRead(plus)){
-    if(consigneVitesse==0)
-      consigneVitesse=10;
-    else if(consigneVitesse <= 25)
-      consigneVitesse+=2;
- 
-  }*/
-}
-void moinss(){
-  test2+=10.0;
-  test-=0.5;
-  /*
-  if(!digitalRead(moins) && consigneVitesse>=2)
-    consigneVitesse-=2;
-    */
-}
-/*
-void pluss(){
-  
-  if(!digitalRead(plus)){
-    Kp+=1;
+
+  if(debug){
+    if(!digitalRead(frein)){
+      vitesseMoyenne=vitesseMoyenne?0.0:10.0;
+    }
   }
 }
-void moinss(){
-  if(!digitalRead(moins))
-    Kp-=1;
+void pluss() {
+  if(debug && !digitalRead(plus))
+    valeurCapteur+=0.2;
 }
-*/
-void haltt(){
+void moinss() {
+  if(debug && !digitalRead(moins))
+    valeurCapteur-=0.2;
+}
+void haltt() {
   if(!digitalRead(halt)){
-    consigneVitesse=10;
-    haltFlag=1;
-    sortieMoteur=0;
+    vitesseMoyenne=vitesseMoyenne?0.0:10.0;
   }
-   else{
-    haltFlag=0;
-   }
 }
 
 
 
 /*
- * Fonctions annexes
- */
+   Fonctions annexes
+*/
 
-void miseAJourVitesse(){
-  moteur.calculerVitesse();
-  vitesseInstantanee = moteur.getVitesse();
-  vitesseFiltree.push(&vitesseInstantanee, &vitesseMoyenne);
-  lectureVitesse = vitesseMoyenne;
+int initialisationCapteur(){
+  if(debug){
+    capteurInitialise = 1;
+    return 1;
+  }
+  else{
+    //capteur
+    LoadCell.begin();
+    float calibrationValue; // calibration value (see example file "Calibration.ino")
+    calibrationValue = 10174.09; // uncomment this if you want to set the calibration value in the sketch
+  
+    long stabilizingtime = 2000; // preciscion right after power-up can be improved by adding a few seconds of stabilizing time
+    boolean _tare = true; //set this to false if you don't want tare to be performed in the next step
+    LoadCell.start(stabilizingtime, _tare);
+    if (LoadCell.getTareTimeoutFlag()) {
+      Serial.println("Timeout, check MCU>HX711 wiring and pin designations");
+      led.ledFail(0);
+      return 0;
+    }
+    else {
+      LoadCell.setCalFactor(calibrationValue); // set calibration value (float)
+      Serial.println("Startup is complete");
+      capteurInitialise = 1;
+      return 1;
+    } 
+  }
+}
+
+void switchCtrl(bool value){
+  if(value != isCtrlAlive)
+    digitalWrite(ctrlSwitch,value);
+}
+
+void resetCtrl(){
+  if(!isCtrlAlive){
+    switchCtrl(0);
+    delay(500);
+    switchCtrl(1);
+  }
+}
+
+void miseAJourVitesse() {
+  if(debug){
+    
+  }
+  else{
+    moteur.calculerVitesse();
+    vitesseInstantanee = moteur.getVitesse();
+    vitesseFiltree.push(&vitesseInstantanee, &vitesseMoyenne);
+  }
 }
 
 void miseAJourPID()
 {
   //lectureVitesse = vitesseInstantanee;
-  if(!haltFlag)
+  if (!haltFlag)
     myPID.Compute();
 }
 
@@ -265,116 +386,52 @@ void debugMessage()
   Serial.print(" vitesse :");
   Serial.print(vitesseMoyenne);
   Serial.print("\t");
-  Serial.print("consigne vitesse :");
-  Serial.print(consigneVitesse);
-  Serial.print("\t");
   Serial.print("sortie Moteur :");
   Serial.print(sortieMoteur);
   Serial.print("\t");
   Serial.print("Capteur :");
   Serial.print(valeurCapteur);
   Serial.print("\t");
-  Serial.print("Capteur seuil :");
-  Serial.print(valeurCapteurSeuil);
-  Serial.print("\t");
   Serial.print("Moteur state :");
   Serial.print(moteur.getMoteurState());
+  Serial.print("\t");
+  Serial.print("Etat :");
+  Serial.print(etat);
   Serial.print("\t");
   Serial.print("chrono :");
   Serial.print(chronoFrein.isRunning());
   Serial.print("\t");
+  Serial.print(chronoFrein.elapsed());
+  Serial.print("\t");
   Serial.println();
 }
 
-void envoi(float vitesse){
+void envoi(float vitesse) {
   byte * b = (byte *) &vitesse;
-  Serial.write(b,4);
+  Serial.write(b, 4);
 }
 
-void envoiFin(){
+void envoiFin() {
   Serial.write("\n");
 }
 
 
-void updateCell(HX711_ADC &cell, bool &newDataReady, double &valeur){
-  // check for new data/start next conversion:
-  if (cell.update()) newDataReady = true;
-
-  // get smoothed value from the dataset:
-  if (newDataReady) {
+void updateCell(HX711_ADC &cell, bool &newDataReady, double &valeur) {
+  if(!debug){
+    // check for new data/start next conversion:
+    if (cell.update()) newDataReady = true;
+  
+    // get smoothed value from the dataset:
+    if (newDataReady) {
       float i = cell.getData();
       valeur = i;
+    }  
+    // si valeur capteur inférieur à un seuil mais positive, comme si c'était 0.
+    if((abs(valeur)<THRESHOLD_CAPTEUR) && valeur>0){
+      valeurCapteur = 0;
+    }
+    else{
+      valeurCapteur = valeur; 
+    }
   }
-}
-
-
-void loop()
-{
-
-  led.ledPrint(test,test2);
-  Serial.print(test);
-  Serial.print(" - ");
-  Serial.println(test2);
-/*
-  miseAJourVitesse();
-  
-  // lecture du capteur de force
-  updateCell(LoadCell, newDataReady, valeurCapteur);
-
-  // si valeur capteur inférieur à un seuil mais positive, comme si c'était 0.
-  if((valeurCapteur<THRESHOLD_CAPTEUR) && valeurCapteur>0){
-    valeurCapteurSeuil = 0;
-    //sortieMoteur=pwmMin;
-  }
-  else{
-    valeurCapteurSeuil = valeurCapteur; 
-  }
-
-
-  if(chronoFrein.isRunning() && chronoFrein.hasPassed(FREIN_TIMEOUT)){
-    chronoFrein.stop();
-    //moteur.setMoteurState(BRAKING);
-    //Serial.println("prout");
-  }
-
-  // si valeur capteur inférieure à un seuil précis, on arrête tout.
-  if(valeurCapteur<THRESHOLD_CAPTEUR_STOP){
-    moteur.setMoteurState(STOPPED);
-    valeurCapteurSeuil = 0;
-    myPID.SetMode(MANUAL);
-    sortieMoteur=pwmMin;
-  }
-  else{
-    myPID.SetMode(AUTOMATIC);
-  }
-    
-  if(lectureVitesse<2 && valeurCapteurSeuil <= 0)
-    moteur.setMoteurState(STOPPED);
-  else
-    moteur.setMoteurState(SPINNING);
-  if(newDataReady){
-    //rafraichissement toutes les 100ms environ
-    
-    miseAJourPID();
-    newDataReady=0;
-    led.ledPrint(valeurCapteur,sortieMoteur);
-  }
-  
-  moteur.mettreLesGaz(sortieMoteur);
-
-
-
-  
-  if(debugPython){
-  
-    envoi(moteur.getVitesse());
-    envoi(consigneVitesse);
-    envoi(sortieMoteur);
-    envoi(valeurCapteur);
-    envoiFin();
-  }
-  else
-    debugMessage();
-  */
- 
 }

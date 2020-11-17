@@ -9,7 +9,13 @@ Led::Led(float maxTraction, float seuilTractionNulle, float pwmMin, float pwmMax
 }
 
 void Led::ledState(state_machine_t state){
-  
+  if(state>=0 && state <=5){
+      pixels.clear();
+      pixels.setPixelColor(state, pixels.Color(100, 0, 0));
+      pixels.show();
+  }
+    else
+        ledFail(OTHER);
 }
 
 void Led::ledBegin(){
@@ -89,9 +95,7 @@ void Led::ledPrint(float traction, float pwm){
 
 void Led::ledFail(error_state_t error){
   pixels.clear();
-  for(int i = 2; i< _numPixels-2; i++){
-     pixels.setPixelColor(i,pixels.Color(30,30,30));
-  }
+  pixels.setPixelColor(error,pixels.Color(0,100,0));
   pixels.show();
   
 }
