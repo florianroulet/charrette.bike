@@ -30,6 +30,7 @@ bool capteurInitialise = 0;
 
 const bool debugPython = 0;
 const bool debug = 1;
+const bool debugMotor = 0;
 
 
 /////////////////////////////////////////////////
@@ -95,7 +96,7 @@ bool haltFlag = 0;
 
 int ctrlAlive = 12;
 int ctrlSwitch = 13;
-bool isCtrlAlive = 0;
+bool isCtrlAlive = debugMotor?1:0;
 
 
 float test = 0;
@@ -166,6 +167,7 @@ void setup()
   // Controleur
   pinMode(ctrlAlive, INPUT);
   pinMode(ctrlSwitch, OUTPUT);
+  digitalWrite(ctrlSwitch, false);
   attachPCINT(digitalPinToPCINT(ctrlAlive),interruptCtrlAlive,CHANGE);
 
   
@@ -183,60 +185,85 @@ void loop()
   if(capteurInitialise)
     updateCell(LoadCell, newDataReady, valeurCapteur_);
 
+
+    // etat 0
     if(etat == INITIALISATION){
+      switchCtrl(false);
       led.ledState(etat);
       moteur.setMoteurState(STOPPED);
-      if(initialisationCapteur() && vitesseMoyenne == 0 ){
+      switchCtrl(true);
+      if(transition01()){
         etat = ATTENTE;
       }
     }
+
+    // etat 1
     else if( etat == ATTENTE){
 
       myPID.SetMode(MANUAL); 
       led.ledState(etat);
       moteur.setMoteurState(STOPPED);
-      if(valeurCapteur>alpha)
+      if(transition0())
+        etat = INITIALISATION;
+      else if(transition12())
         etat = ROULE;
-      else if(valeurCapteur < gamma || chronoFrein.elapsed()>t1)
+      else if(transition15())
         etat = FREINAGE;
     }
+
+    //etat 2
     else if(etat == ROULE){
 
       moteur.setMoteurState(SPINNING);
       myPID.SetMode(AUTOMATIC);
       miseAJourPID();
       led.ledPrint(valeurCapteur,sortieMoteur);
-      if((valeurCapteur==0 || chronoFrein.elapsed()>t1) && vitesseMoyenne > 0)
+      if(transition0())
+        etat = INITIALISATION;
+      else if(transition23())
         etat = STATU_QUO;
     }
+
+    //etat 3
     else if ( etat == STATU_QUO){
 
       led.ledState(etat);
       myPID.SetMode(MANUAL);
-      if(valeurCapteur > alpha && !chronoFrein.isRunning())
+      if(transition0())
+        etat = INITIALISATION;
+      else  if(transition32())
         etat=ROULE;
-      else if((valeurCapteur<0 && valeurCapteur>beta ) || chronoFrein.elapsed()>t2)
+      else if(transition34())
         etat = DECCELERATION;
     }
+
+    //etat 4
     else if( etat == DECCELERATION){
 
       led.ledState(etat);
       moteur.setMoteurState(STOPPED);
       sortieMoteur=pwmMin;
-      if(valeurCapteur > alpha && !chronoFrein.isRunning())
+      if(transition0())
+        etat = INITIALISATION;
+      else  if(transition42())
         etat = ROULE;
-      else if(valeurCapteur < gamma || chronoFrein.elapsed()>t3)
+      else if(transition45())
         etat = FREINAGE;
     }
+
+    //etat 5
     else if(etat == FREINAGE){
 
       led.ledState(etat);
       moteur.setMoteurState(BRAKING);
-      if(valeurCapteur > alpha && !chronoFrein.isRunning())
+      if(transition0())
+        etat = INITIALISATION;
+      else   if(transition52())
         etat = ROULE;
-      else if(!chronoFrein.isRunning() && vitesseMoyenne == 0 && valeurCapteur == 0)
+      else if(transition51())
         etat = ATTENTE;
     }
+
     else{
 
       led.ledFail(OTHER);
@@ -250,8 +277,13 @@ void loop()
     envoi(valeurCapteur);
     envoiFin();
   }
-  else
+  else{
     debugMessage();
+    debugTransition();
+    Serial.println();
+    Serial.println();
+
+  }
 
 
   moteur.mettreLesGaz(sortieMoteur);
@@ -259,6 +291,40 @@ void loop()
 
 }
 
+
+bool transition01(){
+  return (etat == INITIALISATION && initialisationCapteur() && vitesseMoyenne == 0 && isCtrlAlive);
+}
+bool transition12(){
+  return (etat == ATTENTE && valeurCapteur>alpha && isCtrlAlive);
+}
+bool transition23(){
+  return (etat == ROULE && (valeurCapteur<0.5 || chronoFrein.elapsed()>t1) && vitesseMoyenne > 0 && isCtrlAlive);
+}
+bool transition32(){
+  return (etat == STATU_QUO && valeurCapteur > alpha && !chronoFrein.isRunning() && isCtrlAlive);
+}
+bool transition34(){
+  return (etat == STATU_QUO && (valeurCapteur<0 && valeurCapteur>beta ) || chronoFrein.elapsed()>t2 && isCtrlAlive);
+}
+bool transition42(){
+  return (etat == DECCELERATION && valeurCapteur > alpha && !chronoFrein.isRunning() && isCtrlAlive);
+}
+bool transition45(){
+  return (etat == DECCELERATION && valeurCapteur < gamma || chronoFrein.elapsed()>t3 && isCtrlAlive);
+}
+bool transition52(){
+  return (etat == FREINAGE && valeurCapteur > alpha && !chronoFrein.isRunning() && isCtrlAlive);
+}
+bool transition51(){
+  return (etat == FREINAGE && !chronoFrein.isRunning() && vitesseMoyenne == 0 && valeurCapteur == 0 && isCtrlAlive);
+}
+bool transition15(){
+  return (etat == ATTENTE && valeurCapteur < gamma || chronoFrein.elapsed()>t1 && isCtrlAlive);
+}
+bool transition0(){
+  return (!isCtrlAlive || !initialisationCapteur());
+}
 
 
 /*
@@ -292,7 +358,7 @@ void freinage() {
     chronoFrein.stop();
   }
 
-  if(debug){
+  if(debugMotor){
     if(!digitalRead(frein)){
       vitesseMoyenne=vitesseMoyenne?0.0:10.0;
     }
@@ -347,8 +413,10 @@ int initialisationCapteur(){
 }
 
 void switchCtrl(bool value){
+  if(!debugMotor){
   if(value != isCtrlAlive)
     digitalWrite(ctrlSwitch,value);
+  }
 }
 
 void resetCtrl(){
@@ -360,7 +428,7 @@ void resetCtrl(){
 }
 
 void miseAJourVitesse() {
-  if(debug){
+  if(debugMotor){
     
   }
   else{
@@ -404,6 +472,19 @@ void debugMessage()
   Serial.print(chronoFrein.elapsed());
   Serial.print("\t");
   Serial.println();
+}
+
+void debugTransition(){
+  Serial.print("0->1: \t");Serial.print(transition01());Serial.print(" | ");
+  Serial.print("1->2: \t");Serial.print(transition12());Serial.print(" | ");
+  Serial.print("1->5: \t");Serial.print(transition15());Serial.print(" | ");
+  Serial.print("2->3: \t");Serial.print(transition23());Serial.print(" | ");
+  Serial.print("3->2: \t");Serial.print(transition32());Serial.print(" | ");
+  Serial.print("3->4: \t");Serial.print(transition34());Serial.print(" | ");
+  Serial.print("4->2: \t");Serial.print(transition42());Serial.print(" | ");
+  Serial.print("4->5: \t");Serial.print(transition45());Serial.print(" | ");
+  Serial.print("5->2: \t");Serial.print(transition52());Serial.print(" | ");
+  Serial.print("5->1: \t");Serial.print(transition51());Serial.println("");
 }
 
 void envoi(float vitesse) {
