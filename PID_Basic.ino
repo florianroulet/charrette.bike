@@ -31,6 +31,8 @@ bool capteurInitialise = 0;
 const bool debugPython = 0;
 const bool debug = 1;
 const bool debugMotor = 0;
+const bool debugFrein = 0;
+const bool debugCapteur = 0;
 
 
 /////////////////////////////////////////////////
@@ -38,7 +40,7 @@ const bool debugMotor = 0;
 /////////////////////////////////////////////////
 
 
-const int frein = debug?5:2;
+const int frein = debugFrein?4:5;
 Chrono chronoFrein;
 bool freinFlag = 0;
 int t1 = 300;
@@ -84,9 +86,9 @@ double vitesseInstantanee;
 ///////////// Pin interrupteur debug ////////////
 /////////////////////////////////////////////////
 
-int plus = 3;
-int moins = 4;
-int halt = 5;
+int plus = 2;
+int moins = 3;
+int halt = 4;
 bool haltFlag = 0;
 
 
@@ -181,6 +183,7 @@ void setup()
 
 void loop()
 {
+ // checkCtrl();
   miseAJourVitesse();
   if(capteurInitialise)
     updateCell(LoadCell, newDataReady, valeurCapteur_);
@@ -188,7 +191,8 @@ void loop()
 
     // etat 0
     if(etat == INITIALISATION){
-      switchCtrl(false);
+      Serial.println("Prout");
+      //switchCtrl(false);
       led.ledState(etat);
       moteur.setMoteurState(STOPPED);
       switchCtrl(true);
@@ -279,9 +283,9 @@ void loop()
   }
   else{
     debugMessage();
-    debugTransition();
-    Serial.println();
-    Serial.println();
+   // debugTransition();
+  //  Serial.println();
+  //  Serial.println();
 
   }
 
@@ -293,6 +297,9 @@ void loop()
 
 
 bool transition01(){
+  Serial.println(initialisationCapteur());
+  Serial.println(vitesseMoyenne==0);
+  Serial.println(isCtrlAlive);
   return (etat == INITIALISATION && initialisationCapteur() && vitesseMoyenne == 0 && isCtrlAlive);
 }
 bool transition12(){
@@ -343,13 +350,14 @@ void interruptV()
 void interruptCtrlAlive()
 {
   if(digitalRead(ctrlAlive))
-    isCtrlAlive=0;
-  else
     isCtrlAlive=1;
+  else
+    isCtrlAlive=0;
 }
 
 
 void freinage() {
+  if(debugFrein){
   if (!digitalRead(frein) && !chronoFrein.isRunning()) {
     chronoFrein.start();
   }
@@ -358,18 +366,26 @@ void freinage() {
     chronoFrein.stop();
   }
 
-  if(debugMotor){
-    if(!digitalRead(frein)){
-      vitesseMoyenne=vitesseMoyenne?0.0:10.0;
+  if(!digitalRead(frein)){
+    vitesseMoyenne=vitesseMoyenne?0.0:10.0;
     }
+  }
+  else{
+      if (digitalRead(frein) && !chronoFrein.isRunning()) {
+    chronoFrein.start();
+  }
+  else if (!digitalRead(frein) && chronoFrein.isRunning()) {
+    chronoFrein.restart();
+    chronoFrein.stop();
+  }
   }
 }
 void pluss() {
-  if(debug && !digitalRead(plus))
+  if(debugCapteur && !digitalRead(plus))
     valeurCapteur+=0.2;
 }
 void moinss() {
-  if(debug && !digitalRead(moins))
+  if(debugCapteur && !digitalRead(moins))
     valeurCapteur-=0.2;
 }
 void haltt() {
@@ -384,32 +400,39 @@ void haltt() {
    Fonctions annexes
 */
 
-int initialisationCapteur(){
-  if(debug){
-    capteurInitialise = 1;
-    return 1;
-  }
-  else{
-    //capteur
-    LoadCell.begin();
-    float calibrationValue; // calibration value (see example file "Calibration.ino")
-    calibrationValue = 10174.09; // uncomment this if you want to set the calibration value in the sketch
-  
-    long stabilizingtime = 2000; // preciscion right after power-up can be improved by adding a few seconds of stabilizing time
-    boolean _tare = true; //set this to false if you don't want tare to be performed in the next step
-    LoadCell.start(stabilizingtime, _tare);
-    if (LoadCell.getTareTimeoutFlag()) {
-      Serial.println("Timeout, check MCU>HX711 wiring and pin designations");
-      led.ledFail(0);
-      return 0;
-    }
-    else {
-      LoadCell.setCalFactor(calibrationValue); // set calibration value (float)
-      Serial.println("Startup is complete");
+int initialisationCapteur(){  
+  if(!capteurInitialise){
+    if(debugCapteur){
       capteurInitialise = 1;
       return 1;
-    } 
+    }
+    else{
+      //capteur
+      LoadCell.begin();
+      float calibrationValue; // calibration value (see example file "Calibration.ino")
+      calibrationValue = 10174.09; // uncomment this if you want to set the calibration value in the sketch
+    
+      long stabilizingtime = 2000; // preciscion right after power-up can be improved by adding a few seconds of stabilizing time
+      boolean _tare = true; //set this to false if you don't want tare to be performed in the next step
+      LoadCell.start(stabilizingtime, _tare);
+      if (LoadCell.getTareTimeoutFlag()) {
+        Serial.println("Timeout, check MCU>HX711 wiring and pin designations");
+        led.ledFail(0);
+        return 0;
+      }
+      else {
+        LoadCell.setCalFactor(calibrationValue); // set calibration value (float)
+        Serial.println("Startup is complete");
+        capteurInitialise = 1;
+        return 1;
+      } 
+    }
   }
+  else return 1;
+}
+
+void checkCtrl(){
+  interruptCtrlAlive();
 }
 
 void switchCtrl(bool value){
@@ -429,7 +452,7 @@ void resetCtrl(){
 
 void miseAJourVitesse() {
   if(debugMotor){
-    
+    Serial.println("Oups");
   }
   else{
     moteur.calculerVitesse();
@@ -498,7 +521,7 @@ void envoiFin() {
 
 
 void updateCell(HX711_ADC &cell, bool &newDataReady, double &valeur) {
-  if(!debug){
+  if(!debugCapteur){
     // check for new data/start next conversion:
     if (cell.update()) newDataReady = true;
   
