@@ -60,7 +60,7 @@ Moteur moteur = Moteur();
 ///////////////// PID ///////////////////////////
 /////////////////////////////////////////////////
 
-double Kp = 6.5, Ki = 3.25, Kd = 0.1;
+double Kp = 12, Ki = 6, Kd = 0.1;
 
 double sortieMoteur;    //output
 double valeurCapteur;   //input (valeurCapteur_ mais = 0 si < à un seuil
@@ -131,12 +131,12 @@ enum etats_enum {INITIALISATION,
                  FREINAGE
                 };
 
-uint8_t etat = INITIALISATION;
+int etat = INITIALISATION;
 
 
-float alpha = 1.0;
-float beta = -2.0;
-float gamma = -5.0;
+float alpha = 1.0;  //seuil au dessus duquel le PID se calcule et se lance
+float beta = -4.0;  //seuil en deça duquel on passe sur déccélération (pwm=0, pid manual)
+float gamma = -8.0; // seuil en deça duquel on passe sur du freinage
 
 
 void setup()
@@ -191,7 +191,6 @@ void loop()
 
     // etat 0
     if(etat == INITIALISATION){
-      Serial.println("Prout");
       //switchCtrl(false);
       led.ledState(etat);
       moteur.setMoteurState(STOPPED);
@@ -232,6 +231,7 @@ void loop()
     else if ( etat == STATU_QUO){
 
       led.ledState(etat);
+      led.ledPrint(valeurCapteur,sortieMoteur);
       myPID.SetMode(MANUAL);
       if(transition0())
         etat = INITIALISATION;
@@ -245,8 +245,10 @@ void loop()
     else if( etat == DECCELERATION){
 
       led.ledState(etat);
-      moteur.setMoteurState(STOPPED);
-      sortieMoteur=pwmMin;
+    //  moteur.setMoteurState(STOPPED);
+    //  sortieMoteur=pwmMin;
+      myPID.SetMode(AUTOMATIC);
+      miseAJourPID();
       if(transition0())
         etat = INITIALISATION;
       else  if(transition42())
@@ -259,7 +261,9 @@ void loop()
     else if(etat == FREINAGE){
 
       led.ledState(etat);
+      myPID.SetMode(MANUAL);
       moteur.setMoteurState(BRAKING);
+      sortieMoteur=pwmMin;
       if(transition0())
         etat = INITIALISATION;
       else   if(transition52())
@@ -279,6 +283,8 @@ void loop()
     envoi(moteur.getVitesse());
     envoi(sortieMoteur);
     envoi(valeurCapteur);
+    envoiInt(etat);
+   // envoiChrono(chronoFrein.elapsed());
     envoiFin();
   }
   else{
@@ -297,9 +303,9 @@ void loop()
 
 
 bool transition01(){
-  Serial.println(initialisationCapteur());
-  Serial.println(vitesseMoyenne==0);
-  Serial.println(isCtrlAlive);
+ // Serial.println(initialisationCapteur());
+ // Serial.println(vitesseMoyenne==0);
+ // Serial.println(isCtrlAlive);
   return (etat == INITIALISATION && initialisationCapteur() && vitesseMoyenne == 0 && isCtrlAlive);
 }
 bool transition12(){
@@ -312,7 +318,7 @@ bool transition32(){
   return (etat == STATU_QUO && valeurCapteur > alpha && !chronoFrein.isRunning() && isCtrlAlive);
 }
 bool transition34(){
-  return (etat == STATU_QUO && (valeurCapteur<0 && valeurCapteur>beta ) || chronoFrein.elapsed()>t2 && isCtrlAlive);
+  return (etat == STATU_QUO && (valeurCapteur<beta && valeurCapteur>gamma ) || chronoFrein.elapsed()>t2 && isCtrlAlive);
 }
 bool transition42(){
   return (etat == DECCELERATION && valeurCapteur > alpha && !chronoFrein.isRunning() && isCtrlAlive);
@@ -452,7 +458,7 @@ void resetCtrl(){
 
 void miseAJourVitesse() {
   if(debugMotor){
-    Serial.println("Oups");
+   // Serial.println("Oups");
   }
   else{
     moteur.calculerVitesse();
@@ -514,6 +520,15 @@ void envoi(float vitesse) {
   byte * b = (byte *) &vitesse;
   Serial.write(b, 4);
 }
+void envoiInt(uint16_t val) {
+  byte * b = (byte *) &val;
+  Serial.write(b, 2);
+}
+
+void envoiChrono(uint64_t val) {
+  byte * b = (byte *) &val;
+  Serial.write(b, 8);
+}
 
 void envoiFin() {
   Serial.write("\n");
@@ -532,7 +547,7 @@ void updateCell(HX711_ADC &cell, bool &newDataReady, double &valeur) {
     }  
     // si valeur capteur inférieur à un seuil mais positive, comme si c'était 0.
     if((abs(valeur)<THRESHOLD_CAPTEUR) && valeur>0){
-      valeurCapteur = 0;
+      valeurCapteur = 0.0;
     }
     else{
       valeurCapteur = valeur; 

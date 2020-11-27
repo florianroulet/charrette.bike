@@ -55,14 +55,20 @@ class serialPlot:
         #print(len(self.rawData))
         #v= self.rawData.split(",")
 
+       # if 1:
+        print("caca")
+        print(struct.calcsize('fffhc'))
         try:
-            vitesse, consigne, pwm, capteur, end = struct.unpack('ffffc', self.rawData)    # use 'h' for a 2 byte integer
-            print("Capteur: {:4.2f} - PWM: {:3.0f} - vitesse: {:4.2f}".format(capteur,pwm,vitesse))
+            print(len(self.rawData))
+            vitesse, pwm, capteur, etat, end = struct.unpack('fffhc', self.rawData)    # use 'h' for a 2 byte integer
+            print(end);
+            print(end=='0x0A')
+            #print("Capteur: {:4.2f} - PWM: {:3.0f} - vitesse: {:4.2f} - etat {}".format(capteur,pwm,vitesse, etat))
             self.dataX.append(vitesse)    # we get the latest data point and append it to our array
-            self.dataY.append(consigne)
+            self.dataY.append(etat)
             self.dataZ.append(capteur)
             self.dataA.append(pwm)
-            self.csvData.append([vitesse,consigne,pwm,capteur]);
+            self.csvData.append([vitesse,etat,pwm,capteur]);
 
         #print(b1 + ' ' + b2 + ' ' + b3 + ' ' + b4)
             linesX.set_data(range(self.plotMaxLength), self.dataX)
@@ -71,11 +77,12 @@ class serialPlot:
             linesA.set_data(range(self.plotMaxLength), self.dataA)
 
             lineXValueText.set_text('[' + lineXLabel + '] = ' + '{:3.2f}'.format(vitesse))
-            lineYValueText.set_text('[' + lineYLabel + '] = ' + '{:3.2f}'.format(consigne) )
+            lineYValueText.set_text('[' + lineYLabel + '] = ' + '{}'.format(etat) )
             lineZValueText.set_text('[' + lineZLabel + '] = ' + '{:4.2f}'.format(capteur) )
             lineAValueText.set_text('[' + lineZLabel + '] = ' + '{:3.0f}'.format(pwm) )
         except:
             print("erreur lecture")
+            print(len(self.rawData))
             self.csvData.append([0,0,0,0]);
  
     def backgroundThread(self):    # retrieve data
@@ -102,7 +109,7 @@ def main():
     portName = '/dev/ttyUSB0'
     baudRate = 9600
     maxPlotLength = 100
-    dataNumBytes =  22     # number of bytes of 1 data point
+    dataNumBytes =  25     # number of bytes of 1 data point
     s = serialPlot(portName, baudRate, maxPlotLength, dataNumBytes)   # initializes all required variables
     s.readSerialStart()                                               # starts background thread
  
@@ -119,7 +126,7 @@ def main():
     ax.set_ylabel("AnalogRead Value")
  
     lineXLabel = 'Vitesse'
-    lineYLabel = 'Consigne'
+    lineYLabel = 'Etat'
     lineZLabel = 'Capteur'
     lineALabel = 'PWM'
 
