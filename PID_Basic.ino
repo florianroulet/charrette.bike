@@ -5,6 +5,7 @@
 #include <SoftFilters.h>
 #include <HX711_ADC.h>
 #include "PinChangeInterrupt.h"
+#include "wattmeter.h"
 
 
 
@@ -31,8 +32,8 @@ bool capteurInitialise = 0;
 const bool debugPython = 0;
 const bool debug = 1;
 const bool debugMotor = 0;
-const bool debugFrein = 0;
-const bool debugCapteur = 0;
+const bool debugFrein = 1;
+const bool debugCapteur = 1;
 
 
 /////////////////////////////////////////////////
@@ -115,9 +116,15 @@ Led led = Led(maxTraction, seuilTractionNulle, pwmMin, pwmMax);
 
 
 /////////////////////////////////////////////////
-//////////////////// Graph //////////////////////
+///////////////// Wattmetre /////////////////////
 /////////////////////////////////////////////////
 
+Wattmeter wattmetre;
+
+int amPin = A4;    // select the input pin for the potentiometer
+int vPin = A5;    // select the input pin for the potentiometer
+float amCalib = 65.0;
+float vCalib = 18.4;
 
 /////////////////////////////////////////////////
 //////////////// Etats //////////////////////////
@@ -173,7 +180,9 @@ void setup()
   attachPCINT(digitalPinToPCINT(ctrlAlive),interruptCtrlAlive,CHANGE);
 
   
-  
+  // Wattmetre
+  wattmetre = Wattmeter(amPin,vPin,amCalib,vPin,36);
+ 
   led.ledWelcome();
 
 
@@ -188,6 +197,7 @@ void loop()
   if(capteurInitialise)
     updateCell(LoadCell, newDataReady, valeurCapteur_);
 
+  wattmetre.update();
 
     // etat 0
     if(etat == INITIALISATION){
@@ -499,6 +509,14 @@ void debugMessage()
   Serial.print(chronoFrein.isRunning());
   Serial.print("\t");
   Serial.print(chronoFrein.elapsed());
+  Serial.print("\t");
+  Serial.print(wattmetre.getCurrentRaw());
+  Serial.print("\t");
+  Serial.print(wattmetre.getCurrent());
+  Serial.print("A\t");
+  Serial.print(wattmetre.getPower());
+  Serial.print("W\t");
+  Serial.print(wattmetre.getState());
   Serial.print("\t");
   Serial.println();
 }
