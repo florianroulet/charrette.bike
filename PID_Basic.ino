@@ -1,13 +1,11 @@
 #include <Chrono.h>
-#include "moteur.h"
+#include "MoteurEBike.h"
 #include <PID_v1.h>
-#include "led.h"
+#include "RemorqueLed.h"
 #include <SoftFilters.h>
-#include <HX711_ADC.h>
 #include "PinChangeInterrupt.h"
 #include "wattmeter.h"
-
-
+#include "StrengthSensor.h"
 
 
 
@@ -17,10 +15,10 @@
 
 const int HX711_dout = 8; //mcu > HX711 dout pin
 const int HX711_sck = 7; //mcu > HX711 sck pin
-HX711_ADC LoadCell(HX711_dout, HX711_sck);
-double valeurCapteur_;
-float THRESHOLD_CAPTEUR = 0.5;
-float THRESHOLD_CAPTEUR_STOP = -2.0;
+
+StrengthSensor capteur(HX711_dout, HX711_sck);
+
+double valeurCapteur;
 bool newDataReady = 0;
 bool capteurInitialise = 0;
 
@@ -33,7 +31,7 @@ const bool debugPython = 0;
 const bool debug = 1;
 const bool debugMotor = 0;
 const bool debugFrein = 1;
-const bool debugCapteur = 1;
+const bool debugCapteur = 0;
 
 
 /////////////////////////////////////////////////
@@ -55,7 +53,7 @@ int t3 = 1500;
 /////////////// Moteur //////////////////////////
 /////////////////////////////////////////////////
 
-Moteur moteur = Moteur();
+MoteurEBike moteur = MoteurEBike();
 
 /////////////////////////////////////////////////
 ///////////////// PID ///////////////////////////
@@ -64,7 +62,7 @@ Moteur moteur = Moteur();
 double Kp = 12, Ki = 6, Kd = 0.1;
 
 double sortieMoteur;    //output
-double valeurCapteur;   //input (valeurCapteur_ mais = 0 si < à un seuil
+//double valeurCapteur;   //input (valeurCapteur_ mais = 0 si < à un seuil
 double consigneCapteur = 0; //setpoint
 float pwmMin = 100, pwmMax = 255;
 Chrono resetPID;
@@ -112,7 +110,7 @@ float test2 = 100;
 float maxTraction = 10.0;
 float seuilTractionNulle = 0.3;
 
-Led led = Led(maxTraction, seuilTractionNulle, pwmMin, pwmMax);
+RemorqueLed led = RemorqueLed(maxTraction, seuilTractionNulle, pwmMin, pwmMax);
 
 
 /////////////////////////////////////////////////
@@ -195,7 +193,7 @@ void loop()
  // checkCtrl();
   miseAJourVitesse();
   if(capteurInitialise)
-    updateCell(LoadCell, newDataReady, valeurCapteur_);
+    capteur.update(&newDataReady,&valeurCapteur);
 
   wattmetre.update();
 
@@ -313,9 +311,6 @@ void loop()
 
 
 bool transition01(){
- // Serial.println(initialisationCapteur());
- // Serial.println(vitesseMoyenne==0);
- // Serial.println(isCtrlAlive);
   return (etat == INITIALISATION && initialisationCapteur() && vitesseMoyenne == 0 && isCtrlAlive);
 }
 bool transition12(){
@@ -424,24 +419,17 @@ int initialisationCapteur(){
     }
     else{
       //capteur
-      LoadCell.begin();
-      float calibrationValue; // calibration value (see example file "Calibration.ino")
-      calibrationValue = 10174.09; // uncomment this if you want to set the calibration value in the sketch
-    
-      long stabilizingtime = 2000; // preciscion right after power-up can be improved by adding a few seconds of stabilizing time
-      boolean _tare = true; //set this to false if you don't want tare to be performed in the next step
-      LoadCell.start(stabilizingtime, _tare);
-      if (LoadCell.getTareTimeoutFlag()) {
-        Serial.println("Timeout, check MCU>HX711 wiring and pin designations");
-        led.ledFail(0);
-        return 0;
-      }
-      else {
-        LoadCell.setCalFactor(calibrationValue); // set calibration value (float)
-        Serial.println("Startup is complete");
+      capteur.begin();
+      if(capteur.start()){
+        Serial.println("Initialisation du capteur réussie");
         capteurInitialise = 1;
         return 1;
-      } 
+      }
+      else{
+        Serial.println("Initialisation du capteur échouée. Vérifier connexion");
+        capteurInitialise = 0;  
+        return 0;
+      }
     }
   }
   else return 1;
@@ -550,25 +538,4 @@ void envoiChrono(uint64_t val) {
 
 void envoiFin() {
   Serial.write("\n");
-}
-
-
-void updateCell(HX711_ADC &cell, bool &newDataReady, double &valeur) {
-  if(!debugCapteur){
-    // check for new data/start next conversion:
-    if (cell.update()) newDataReady = true;
-  
-    // get smoothed value from the dataset:
-    if (newDataReady) {
-      float i = cell.getData();
-      valeur = i;
-    }  
-    // si valeur capteur inférieur à un seuil mais positive, comme si c'était 0.
-    if((abs(valeur)<THRESHOLD_CAPTEUR) && valeur>0){
-      valeurCapteur = 0.0;
-    }
-    else{
-      valeurCapteur = valeur; 
-    }
-  }
 }
