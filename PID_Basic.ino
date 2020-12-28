@@ -124,6 +124,10 @@ int vPin = A5;    // select the input pin for the potentiometer
 float amCalib = 65.0;
 float vCalib = 18.4;
 
+bool isFlowing;
+Chrono flowingChrono;
+Chrono stoppedChrono;
+
 /////////////////////////////////////////////////
 //////////////// Etats //////////////////////////
 /////////////////////////////////////////////////
@@ -180,6 +184,11 @@ void setup()
   
   // Wattmetre
   wattmetre = Wattmeter(amPin,vPin,amCalib,vPin,36);
+
+  flowingChrono.restart();
+  flowingChrono.stop();
+  stoppedChrono.restart();
+  stoppedChrono.stop();
  
   led.ledWelcome();
 
@@ -224,11 +233,13 @@ void loop()
 
     //etat 2
     else if(etat == ROULE){
-
       moteur.setMoteurState(SPINNING);
       myPID.SetMode(AUTOMATIC);
       miseAJourPID();
       led.ledPrint(valeurCapteur,sortieMoteur);
+      
+      flowingOrNot();
+      
       if(transition0())
         etat = INITIALISATION;
       else if(transition23())
@@ -241,6 +252,8 @@ void loop()
       led.ledState(etat);
       led.ledPrint(valeurCapteur,sortieMoteur);
       myPID.SetMode(MANUAL);
+      flowingOrNot();
+
       if(transition0())
         etat = INITIALISATION;
       else  if(transition32())
@@ -435,6 +448,40 @@ int initialisationCapteur(){
   else return 1;
 }
 
+void flowingOrNot(){
+        if(!isFlowing){
+          Serial.println("là");
+
+        if(!flowingChrono.isRunning() && !stoppedChrono.isRunning()){
+          flowingChrono.restart();
+        }
+        else if(flowingChrono.elapsed()>500 && wattmetre.getState()==3){
+          isFlowing = 1;
+          flowingChrono.stop();
+        }
+        else if(stoppedChrono.isRunning() && wattmetre.getState() == 3){
+          stoppedChrono.restart();
+          stoppedChrono.stop();
+          isFlowing = 1;
+        }
+      }
+      else{
+          Serial.println("ici");
+        if(wattmetre.getState() == 1){
+          if(!stoppedChrono.isRunning()){
+            stoppedChrono.restart();
+            flowingChrono.restart();
+            flowingChrono.stop();
+          }
+          else if(stoppedChrono.elapsed()>500){
+            sortieMoteur = 0;
+            isFlowing=0;
+            Serial.println("Bloqué depuis ");Serial.println(stoppedChrono.elapsed());
+          }
+        }
+      }
+}
+
 void checkCtrl(){
   interruptCtrlAlive();
 }
@@ -478,34 +525,17 @@ void debugMessage()
   // sprintf(data, "Acc:\t %d - Frein:\t %d - Dec:\t %d - Pieton:\t %d - Stop:\t %d - Frein levier: \t %d - t1Overflow: \t %d  \t - vitesse: \t  ",
   //         accelerationFlag, freinageFlag, deccelerationFlag, pietonFlag, stopFlag, freinLaposteFlag, timer1Overflow);
   // Serial.print(data);
-  Serial.print(" vitesse :");
-  Serial.print(vitesseMoyenne);
-  Serial.print("\t");
-  Serial.print("sortie Moteur :");
-  Serial.print(sortieMoteur);
-  Serial.print("\t");
-  Serial.print("Capteur :");
-  Serial.print(valeurCapteur);
-  Serial.print("\t");
-  Serial.print("Moteur state :");
-  Serial.print(moteur.getMoteurState());
-  Serial.print("\t");
-  Serial.print("Etat :");
-  Serial.print(etat);
-  Serial.print("\t");
-  Serial.print("chrono :");
-  Serial.print(chronoFrein.isRunning());
-  Serial.print("\t");
-  Serial.print(chronoFrein.elapsed());
-  Serial.print("\t");
-  Serial.print(wattmetre.getCurrentRaw());
-  Serial.print("\t");
-  Serial.print(wattmetre.getCurrent());
-  Serial.print("A\t");
-  Serial.print(wattmetre.getPower());
-  Serial.print("W\t");
-  Serial.print(wattmetre.getState());
-  Serial.print("\t");
+ // Serial.print(" vitesse :");  Serial.print(vitesseMoyenne);  Serial.print("\t");
+  Serial.print("sortie Moteur :");  Serial.print(sortieMoteur);  Serial.print("\t");
+  Serial.print("Capteur :");  Serial.print(valeurCapteur);  Serial.print("\t");
+  Serial.print("Moteur state :");  Serial.print(moteur.getMoteurState());  Serial.print("\t");
+ // Serial.print("Etat :");  Serial.print(etat);  Serial.print("\t");
+  Serial.print("chrono :");  Serial.print(chronoFrein.isRunning());  Serial.print(" : ");  Serial.print(chronoFrein.elapsed());  Serial.print("\t");
+  Serial.print("isFlowing: ");Serial.print(isFlowing);  Serial.print(" : ");  Serial.print(flowingChrono.elapsed());  Serial.print("\t");
+  Serial.print("stoppedChrono :"); Serial.print(stoppedChrono.elapsed());  Serial.print("\t");
+  Serial.print(wattmetre.getCurrent());  Serial.print("A\t");
+  Serial.print(wattmetre.getPower());  Serial.print("W\t");
+  Serial.print(wattmetre.getState());  Serial.print("\t");
   Serial.println();
 }
 
