@@ -15,8 +15,9 @@
 
 const int HX711_dout = 8; //mcu > HX711 dout pin
 const int HX711_sck = 7; //mcu > HX711 sck pin
+const double capteur_offset = 841.86;
 
-StrengthSensor capteur(HX711_dout, HX711_sck);
+StrengthSensor capteur(HX711_dout, HX711_sck, capteur_offset);
 
 double valeurCapteur;
 bool newDataReady = 0;
@@ -64,7 +65,7 @@ double Kp = 12, Ki = 6, Kd = 0.1;
 double sortieMoteur;    //output
 //double valeurCapteur;   //input (valeurCapteur_ mais = 0 si < à un seuil
 double consigneCapteur = 0; //setpoint
-float pwmMin = 100, pwmMax = 255;
+float pwmMin = 100, pwmMax = 230;
 Chrono resetPID;
 
 PID myPID(&valeurCapteur, &sortieMoteur, &consigneCapteur, Kp, Ki, Kd, REVERSE);
@@ -121,8 +122,8 @@ Wattmeter wattmetre;
 
 int amPin = A4;    // select the input pin for the potentiometer
 int vPin = A5;    // select the input pin for the potentiometer
-float amCalib = 65.0;
-float vCalib = 18.4;
+float amCalib = 28.84;
+float vCalib = 22.41;
 
 bool isFlowing;
 Chrono flowingChrono;
@@ -183,13 +184,13 @@ void setup()
 
   
   // Wattmetre
-  wattmetre = Wattmeter(amPin,vPin,amCalib,vPin,36);
+  wattmetre = Wattmeter(amPin,vPin,amCalib,vCalib,36);
 
   flowingChrono.restart();
   flowingChrono.stop();
   stoppedChrono.restart();
   stoppedChrono.stop();
- 
+     
   led.ledWelcome();
 
 
@@ -315,8 +316,7 @@ void loop()
   //  Serial.println();
 
   }
-
-
+  
   moteur.mettreLesGaz(sortieMoteur);
 
 
@@ -451,19 +451,18 @@ int initialisationCapteur(){
 void flowingOrNot(){
         if(!isFlowing){
           Serial.println("là");
-
-        if(!flowingChrono.isRunning() && !stoppedChrono.isRunning()){
-          flowingChrono.restart();
-        }
-        else if(flowingChrono.elapsed()>500 && wattmetre.getState()==3){
-          isFlowing = 1;
-          flowingChrono.stop();
-        }
-        else if(stoppedChrono.isRunning() && wattmetre.getState() == 3){
-          stoppedChrono.restart();
-          stoppedChrono.stop();
-          isFlowing = 1;
-        }
+          if(!flowingChrono.isRunning() && !stoppedChrono.isRunning()){
+            flowingChrono.restart();
+          }
+          else if(flowingChrono.elapsed()>500 && wattmetre.getState()==3){
+            isFlowing = 1;
+            flowingChrono.stop();
+          }
+          else if(stoppedChrono.isRunning() && wattmetre.getState() == 3){
+            stoppedChrono.restart();
+            stoppedChrono.stop();
+            isFlowing = 1;
+          }
       }
       else{
           Serial.println("ici");
@@ -533,7 +532,8 @@ void debugMessage()
   Serial.print("chrono :");  Serial.print(chronoFrein.isRunning());  Serial.print(" : ");  Serial.print(chronoFrein.elapsed());  Serial.print("\t");
   Serial.print("isFlowing: ");Serial.print(isFlowing);  Serial.print(" : ");  Serial.print(flowingChrono.elapsed());  Serial.print("\t");
   Serial.print("stoppedChrono :"); Serial.print(stoppedChrono.elapsed());  Serial.print("\t");
-  Serial.print(wattmetre.getCurrent());  Serial.print("A\t");
+  Serial.print(wattmetre.getCurrentRaw());Serial.print(" - ");Serial.print(wattmetre.getCurrent());  Serial.print("A\t");
+  Serial.print(wattmetre.getTension());  Serial.print("V\t");
   Serial.print(wattmetre.getPower());  Serial.print("W\t");
   Serial.print(wattmetre.getState());  Serial.print("\t");
   Serial.println();
