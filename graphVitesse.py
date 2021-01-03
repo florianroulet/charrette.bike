@@ -79,7 +79,7 @@ class serialPlot:
             lineXValueText.set_text('[' + lineXLabel + '] = ' + '{:3.2f}'.format(vitesse))
             lineYValueText.set_text('[' + lineYLabel + '] = ' + '{}'.format(etat) )
             lineZValueText.set_text('[' + lineZLabel + '] = ' + '{:4.2f}'.format(capteur) )
-            lineAValueText.set_text('[' + lineZLabel + '] = ' + '{:3.0f}'.format(pwm) )
+            lineAValueText.set_text('[' + lineALabel + '] = ' + '{:3.0f}'.format(pwm) )
         except:
             print("erreur lecture")
             print(len(self.rawData))
@@ -108,7 +108,7 @@ def main():
     # portName = 'COM5'     # for windows users
     portName = '/dev/ttyUSB0'
     baudRate = 9600
-    maxPlotLength = 100
+    maxPlotLength = 10000
     dataNumBytes =  25     # number of bytes of 1 data point
     s = serialPlot(portName, baudRate, maxPlotLength, dataNumBytes)   # initializes all required variables
     s.readSerialStart()                                               # starts background thread
@@ -125,7 +125,7 @@ def main():
     ax.set_xlabel("time")
     ax.set_ylabel("AnalogRead Value")
  
-    lineXLabel = 'Vitesse'
+    lineXLabel = 'Kd'
     lineYLabel = 'Etat'
     lineZLabel = 'Capteur'
     lineALabel = 'PWM'
