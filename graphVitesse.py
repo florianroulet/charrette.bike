@@ -70,7 +70,7 @@ class serialPlot:
             self.dataA.append(pwm)
             self.csvData.append([vitesse,etat,pwm,capteur]);
 
-        #print(b1 + ' ' + b2 + ' ' + b3 + ' ' + b4)
+
             linesX.set_data(range(self.plotMaxLength), self.dataX)
             linesY.set_data(range(self.plotMaxLength), self.dataY)
             linesZ.set_data(range(self.plotMaxLength), self.dataZ)
@@ -92,7 +92,7 @@ class serialPlot:
             self.rawData=self.serialConnection.readline()
             #self.serialConnection.readinto(self.rawData)
             self.isReceiving = True
-            #print(self.rawData)
+            print(self.rawData)
  
     def close(self):
         self.isRun = False
@@ -108,7 +108,7 @@ def main():
     # portName = 'COM5'     # for windows users
     portName = '/dev/ttyUSB0'
     baudRate = 9600
-    maxPlotLength = 10000
+    maxPlotLength =500
     dataNumBytes =  25     # number of bytes of 1 data point
     s = serialPlot(portName, baudRate, maxPlotLength, dataNumBytes)   # initializes all required variables
     s.readSerialStart()                                               # starts background thread

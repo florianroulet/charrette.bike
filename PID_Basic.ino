@@ -34,6 +34,7 @@ const bool debugMotor = 0;
 const bool debugFrein = 1;
 const bool debugCapteur = 0;
 const bool debugOther =1;
+const bool old = 1;
 
 
 /////////////////////////////////////////////////
@@ -121,8 +122,8 @@ RemorqueLed led = RemorqueLed(maxTraction, seuilTractionNulle, pwmMin, pwmMax);
 
 Wattmeter wattmetre;
 
-int amPin = A4;    // select the input pin for the potentiometer
-int vPin = A5;    // select the input pin for the potentiometer
+int amPin = old?A4:A6;    // select the input pin for the potentiometer  vert
+int vPin = old?A5:A7;    // select the input pin for the potentiometer   jaune
 float amCalib = 28.84;
 float vCalib = 22.41;
 
@@ -134,12 +135,13 @@ Chrono stoppedChrono;
 //////////////// Etats //////////////////////////
 /////////////////////////////////////////////////
 
-enum etats_enum {INITIALISATION,
-                 ATTENTE,
-                 ROULE,
-                 STATU_QUO,
-                 DECCELERATION,
-                 FREINAGE
+enum etats_enum {INITIALISATION,  //0
+                 ATTENTE,         //1
+                 ROULE,           //2
+                 STATU_QUO,       //3
+                 DECCELERATION,   //4
+                 FREINAGE,        //5
+                 MARCHE           //6
                 };
 
 int etat = INITIALISATION;
@@ -148,6 +150,15 @@ int etat = INITIALISATION;
 float alpha = 1.5;  //seuil au dessus duquel le PID se calcule et se lance
 float beta = -3.0;  //seuil en deça duquel on passe sur déccélération (pwm=0, pid manual)
 float gamma = -6.0; // seuil en deça duquel on passe sur du freinage
+
+
+int powerPin = old?0:A3; // pin pour allumer le controleur            Jaune
+int motorBrakePin = old?0:A4; // pin pour activer le mode freinage    Vert
+int walkPin = old?0:A5; // pin pour activer le mode piéton;           Rouge
+
+bool powerCtrl = old?1:0;
+bool walkMode = 0;
+bool motorBrakeMode = 0;
 
 
 void setup()
@@ -196,7 +207,14 @@ void setup()
   led.ledWelcome();
 
   //capteur
-  capteur.setSamplesInUse(16); //16 le défaut
+  capteur.setSamplesInUse(4); //16 le défaut
+
+  pinMode(powerPin,INPUT_PULLUP);
+  pinMode(motorBrakePin,INPUT_PULLUP);
+  pinMode(walkPin,INPUT_PULLUP);
+  attachPCINT(digitalPinToPCINT(powerPin), powerPinInterrupt, CHANGE);
+  attachPCINT(digitalPinToPCINT(motorBrakePin), motorBrakePinInterrupt, CHANGE);
+  attachPCINT(digitalPinToPCINT(walkPin), walkPinInterrupt, CHANGE);
 
 
 }
@@ -212,25 +230,36 @@ void loop()
 
   wattmetre.update();
 
-    // etat 0
+////////////////////////////////////////////////////:
+///////////////////  0  ////////////////////////////
+////////////////////////////////////////////////////:
+
     if(etat == INITIALISATION){
       Serial.println("ah les filles ah les filles");
       //switchCtrl(false);
       led.ledState(etat);
       moteur.setMoteurState(STOPPED);
-      switchCtrl(true);
-      if(transition01()){
+      switchCtrl(powerCtrl);
+      if(transition5()){
+        etat = FREINAGE;
+      }
+      else if(transition01()){
         etat = ATTENTE;
       }
     }
+////////////////////////////////////////////////////:
+///////////////////  1  ////////////////////////////
+////////////////////////////////////////////////////:
 
-    // etat 1
     else if( etat == ATTENTE){
 
       myPID.SetMode(MANUAL); 
       led.ledState(etat);
       moteur.setMoteurState(STOPPED);
-      if(transition0())
+      if(transition5()){
+        etat = FREINAGE;
+      }
+      else if(transition0())
         etat = INITIALISATION;
       else if(transition12())
         etat = ROULE;
@@ -238,7 +267,10 @@ void loop()
         etat = FREINAGE;
     }
 
-    //etat 2
+////////////////////////////////////////////////////:
+///////////////////  2  ////////////////////////////
+////////////////////////////////////////////////////:
+
     else if(etat == ROULE){
       moteur.setMoteurState(SPINNING);
       myPID.SetMode(AUTOMATIC);
@@ -251,13 +283,20 @@ void loop()
       
       flowingOrNot();
       
-      if(transition0())
+      
+      if(transition5()){
+        etat = FREINAGE;
+      }
+      else if(transition0())
         etat = INITIALISATION;
       else if(transition23())
         etat = STATU_QUO;
     }
 
-    //etat 3
+////////////////////////////////////////////////////:
+///////////////////  3  ////////////////////////////
+////////////////////////////////////////////////////:
+
     else if ( etat == STATU_QUO){
 
       led.ledState(etat);
@@ -270,7 +309,11 @@ void loop()
       myPID.SetMode(MANUAL);
       flowingOrNot();
 
-      if(transition0())
+      
+      if(transition5()){
+        etat = FREINAGE;
+      }
+      else if(transition0())
         etat = INITIALISATION;
       else  if(transition32())
         etat=ROULE;
@@ -278,7 +321,10 @@ void loop()
         etat = DECCELERATION;
     }
 
-    //etat 4
+////////////////////////////////////////////////////:
+///////////////////  4  ////////////////////////////
+////////////////////////////////////////////////////:
+
     else if( etat == DECCELERATION){
 
       led.ledState(etat);
@@ -286,7 +332,11 @@ void loop()
     //  sortieMoteur=pwmMin;
       myPID.SetMode(AUTOMATIC);
       miseAJourPID();
-      if(transition0())
+      
+      if(transition5()){
+        etat = FREINAGE;
+      }
+      else if(transition0())
         etat = INITIALISATION;
       else  if(transition42())
         etat = ROULE;
@@ -294,14 +344,22 @@ void loop()
         etat = FREINAGE;
     }
 
-    //etat 5
+
+////////////////////////////////////////////////////:
+///////////////////  5  ////////////////////////////
+////////////////////////////////////////////////////:
+
     else if(etat == FREINAGE){
 
       led.ledState(etat);
       myPID.SetMode(MANUAL);
       moteur.setMoteurState(BRAKING);
       sortieMoteur=pwmMin;
-      if(transition0())
+      
+      if(transition5()){
+        etat = FREINAGE;
+      }
+      else if(transition0())
         etat = INITIALISATION;
       else   if(transition52())
         etat = ROULE;
@@ -339,8 +397,8 @@ void loop()
 
 
 bool transition01(){
- // Serial.print("transition 01"); Serial.print(" - "); Serial.print(etat == INITIALISATION); Serial.print(" - "); Serial.print(initialisationCapteur()); Serial.print(" - "); Serial.print(vitesseMoyenne < 1.0); Serial.print(" - "); Serial.print(isCtrlAlive);
- // Serial.println();
+  //Serial.print("transition 01"); Serial.print(" - "); Serial.print(etat == INITIALISATION); Serial.print(" - "); Serial.print(initialisationCapteur()); Serial.print(" - "); Serial.print(vitesseMoyenne < 1.0); Serial.print(" - "); Serial.print(isCtrlAlive);
+  //Serial.println();
   return (etat == INITIALISATION && initialisationCapteur() && vitesseMoyenne < 1.0 && isCtrlAlive);
 }
 bool transition12(){
@@ -362,16 +420,20 @@ bool transition45(){
   return (etat == DECCELERATION && valeurCapteur < gamma || chronoFrein.elapsed()>t3 && isCtrlAlive);
 }
 bool transition52(){
-  return (etat == FREINAGE && valeurCapteur > alpha && !chronoFrein.isRunning() && isCtrlAlive);
+  return (etat == FREINAGE && valeurCapteur > alpha && !chronoFrein.isRunning() && isCtrlAlive && !motorBrakeMode);
 }
 bool transition51(){
-  return (etat == FREINAGE && !chronoFrein.isRunning() && vitesseMoyenne < 1.0  && valeurCapteur >= 0.0 && valeurCapteur < alpha && isCtrlAlive);
+  return (etat == FREINAGE && !chronoFrein.isRunning() && vitesseMoyenne < 1.0  && valeurCapteur >= 0.0 && valeurCapteur < alpha && isCtrlAlive  && !motorBrakeMode);
 }
 bool transition15(){
   return (etat == ATTENTE && valeurCapteur < gamma || chronoFrein.elapsed()>t1 && isCtrlAlive);
 }
 bool transition0(){
   return (!isCtrlAlive || !initialisationCapteur());
+}
+
+bool transition5(){
+  return (isCtrlAlive && motorBrakeMode);
 }
 
 
@@ -435,6 +497,30 @@ void haltt() {
  // }
 }
 
+
+void powerPinInterrupt(){
+  if(digitalRead(powerPin)){
+    powerCtrl=1;
+  }
+  else
+    powerCtrl=0;
+
+  switchCtrl(powerCtrl);
+}
+void motorBrakePinInterrupt(){
+  if(digitalRead(motorBrakePin)){
+    motorBrakeMode=1;
+  }
+  else
+    motorBrakeMode=0;
+}
+void walkPinInterrupt(){
+  if(digitalRead(walkPin)){
+    walkMode=1;
+  }
+  else
+    walkMode=0;
+}
 
 
 /*
@@ -557,6 +643,7 @@ void debugMessage()
 //  Serial.print(wattmetre.getTension());  Serial.print("V\t");
   Serial.print(wattmetre.getPower());  Serial.print("W\t");
   Serial.print(wattmetre.getState());  Serial.print("\t");
+  Serial.print("Kd: ");Serial.print(Kd);  Serial.print("\t");
   Serial.println();
 }
 
