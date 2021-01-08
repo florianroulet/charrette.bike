@@ -34,7 +34,7 @@ const bool debugMotor = 0;
 const bool debugFrein = 1;
 const bool debugCapteur = 0;
 const bool debugOther =1;
-const bool old = 1;
+const bool old = 0;
 
 
 /////////////////////////////////////////////////
@@ -62,7 +62,7 @@ MoteurEBike moteur = MoteurEBike();
 ///////////////// PID ///////////////////////////
 /////////////////////////////////////////////////
 
-double Kp = 12, Ki = 6, Kd = 0.01;
+double Kp = 6.5, Ki = 3.25, Kd = 0.1;
 
 double sortieMoteur;    //output
 //double valeurCapteur;   //input (valeurCapteur_ mais = 0 si < à un seuil
@@ -275,11 +275,14 @@ void loop()
       moteur.setMoteurState(SPINNING);
       myPID.SetMode(AUTOMATIC);
       miseAJourPID();
+      /*
       if(wattmetre.getState()==3)
         led.ledPrint(valeurCapteur,sortieMoteur);
       else{
         led.ledFail(2);
       }
+      */
+      led.ledPrint(valeurCapteur,sortieMoteur);
       
       flowingOrNot();
       
@@ -289,8 +292,8 @@ void loop()
       }
       else if(transition0())
         etat = INITIALISATION;
-      else if(transition23())
-        etat = STATU_QUO;
+    //  else if(transition23())
+    //    etat = STATU_QUO;
     }
 
 ////////////////////////////////////////////////////:
@@ -300,12 +303,14 @@ void loop()
     else if ( etat == STATU_QUO){
 
       led.ledState(etat);
+  /*
       if(wattmetre.getState()==3)
         led.ledPrint(valeurCapteur,sortieMoteur);
       else{
         led.ledFail(3);
       }
-      
+      */
+      led.ledPrint(valeurCapteur,sortieMoteur);
       myPID.SetMode(MANUAL);
       flowingOrNot();
 
@@ -368,7 +373,7 @@ void loop()
     }
 
     else{
-
+      Serial.println("Sortie de cas");
       led.ledFail(OTHER);
     }
 
@@ -433,7 +438,7 @@ bool transition0(){
 }
 
 bool transition5(){
-  return (isCtrlAlive && motorBrakeMode);
+  return (isCtrlAlive && (motorBrakeMode || valeurCapteur < gamma));
 }
 
 
@@ -515,17 +520,31 @@ void motorBrakePinInterrupt(){
     motorBrakeMode=0;
 }
 void walkPinInterrupt(){
-  if(digitalRead(walkPin)){
+  if(digitalRead(walkPin))
     walkMode=1;
-  }
   else
     walkMode=0;
+
+  setPIDMode(walkMode);
 }
 
 
 /*
    Fonctions annexes
 */
+
+void setPIDMode(bool walkOrNot){
+  if(walkOrNot){
+    Kp = 6.5;
+    Ki = 3.25;
+    Kd = 0.1;
+  }
+  else{
+    Kp = 12;
+    Ki = 6;
+    Kd = 0.1;
+  }
+}
 
 int initialisationCapteur(){  
   if(!capteurInitialise){
@@ -556,12 +575,33 @@ void flowingOrNot(){
   /*
    * Pas bon, si ça bloque dès le démarrageet qu'on passe pas en Flowing
    */
+   Serial.println("flowingOrNot");
+  // if(walkMode){
+    if(wattmetre.getState() == 3 && sortieMoteur>115){
+      isFlowing=1;
+      Serial.println("moteur tourne, rendben");
+      stoppedChrono.stop();
+    }
+    else if(sortieMoteur>115 && wattmetre.getState() ==1){
+      led.ledFail(etat);
+      isFlowing=0;
+      if(!stoppedChrono.isRunning())
+        stoppedChrono.restart();
+      else if(stoppedChrono.elapsed()>500){
+        sortieMoteur=0;
+        Serial.print("freeze, don't move");
+       // delay(10);
+        stoppedChrono.restart();
+      }
+  //  }
+    
+    /*
         if(!isFlowing){
           Serial.println("là");
           if(!flowingChrono.isRunning() && !stoppedChrono.isRunning()){
             flowingChrono.restart();
           }
-          else if(flowingChrono.elapsed()>200 && wattmetre.getState()==3){
+          else if(flowingChrono.elapsed()>100 && wattmetre.getState()==3){
             isFlowing = 1;
             flowingChrono.stop();
           }
@@ -579,13 +619,15 @@ void flowingOrNot(){
             flowingChrono.restart();
             flowingChrono.stop();
           }
-          else if(stoppedChrono.elapsed()>200){
+          else if(stoppedChrono.elapsed()>500){
             sortieMoteur = 0;
             isFlowing=0;
             Serial.println("Bloqué depuis ");Serial.println(stoppedChrono.elapsed());
           }
         }
       }
+      */
+   }
 }
 
 void checkCtrl(){
