@@ -239,6 +239,7 @@ void loop()
       //switchCtrl(false);
       led.ledState(etat);
       moteur.setMoteurState(STOPPED);
+      capteur.setThresholdSensor(0.5);
       switchCtrl(powerCtrl);
       if(transition5()){
         etat = FREINAGE;
@@ -256,6 +257,7 @@ void loop()
       myPID.SetMode(MANUAL); 
       led.ledState(etat);
       moteur.setMoteurState(STOPPED);
+      capteur.setThresholdSensor(0.5);
       if(transition5()){
         etat = FREINAGE;
       }
@@ -283,7 +285,7 @@ void loop()
       }
       */
       led.ledPrint(valeurCapteur,sortieMoteur);
-      
+      capteur.setThresholdSensor(0.0);
       flowingOrNot();
       
       
@@ -360,6 +362,7 @@ void loop()
       myPID.SetMode(MANUAL);
       moteur.setMoteurState(BRAKING);
       sortieMoteur=pwmMin;
+      capteur.setThresholdSensor(0.5);
       
       if(transition5()){
         etat = FREINAGE;
@@ -577,7 +580,7 @@ void flowingOrNot(){
    */
    Serial.println("flowingOrNot");
   // if(walkMode){
-    if(wattmetre.getState() == 3 && sortieMoteur>115){
+    if(wattmetre.getState() == 3  && sortieMoteur>115){
       isFlowing=1;
       Serial.println("moteur tourne, rendben");
       stoppedChrono.stop();
@@ -593,40 +596,9 @@ void flowingOrNot(){
        // delay(10);
         stoppedChrono.restart();
       }
-  //  }
-    
-    /*
-        if(!isFlowing){
-          Serial.println("là");
-          if(!flowingChrono.isRunning() && !stoppedChrono.isRunning()){
-            flowingChrono.restart();
-          }
-          else if(flowingChrono.elapsed()>100 && wattmetre.getState()==3){
-            isFlowing = 1;
-            flowingChrono.stop();
-          }
-          else if(stoppedChrono.isRunning() && wattmetre.getState() == 3){
-            stoppedChrono.restart();
-            stoppedChrono.stop();
-            isFlowing = 1;
-          }
-      }
-      else{
-          Serial.println("ici");
-        if(wattmetre.getState() == 1){
-          if(!stoppedChrono.isRunning()){
-            stoppedChrono.restart();
-            flowingChrono.restart();
-            flowingChrono.stop();
-          }
-          else if(stoppedChrono.elapsed()>500){
-            sortieMoteur = 0;
-            isFlowing=0;
-            Serial.println("Bloqué depuis ");Serial.println(stoppedChrono.elapsed());
-          }
-        }
-      }
-      */
+   }
+   else{
+    Serial.println("autre cas, batterie viide?");
    }
 }
 
