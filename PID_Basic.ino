@@ -1,3 +1,4 @@
+#include <EEPROM.h>
 #include <Chrono.h>
 #include "MoteurEBike.h"
 #include <PID_v1.h>
@@ -6,26 +7,6 @@
 #include "PinChangeInterrupt.h"
 #include "wattmeter.h"
 #include "StrengthSensor.h"
-
-
-
-/////////////////////////////////////////////////
-/////////////// capteur force ///////////////////
-/////////////////////////////////////////////////
-
-const int HX711_dout = 8; //mcu > HX711 dout pin
-const int HX711_sck = 7; //mcu > HX711 sck pin
-const double capteur_offset = 841.86;
-
-StrengthSensor capteur(HX711_dout, HX711_sck, capteur_offset);
-
-double valeurCapteur;
-bool newDataReady = 0;
-bool capteurInitialise = 0;
-Chrono resetOffsetChrono;
-int resetOffsetIter;
-MovingAverageFilter<double, double> movingOffset(16);
-double newOffset,rawValue;
 
 
 /////////////////////////////////////////////////
@@ -40,6 +21,31 @@ const bool debugCapteur = 0;
 const bool debugOther =0;
 const bool old = 0;
 
+/////////////////////////////////////////////////
+/////////////// capteur force ///////////////////
+/////////////////////////////////////////////////
+
+const int HX711_dout = 8; //mcu > HX711 dout pin
+const int HX711_sck = 7; //mcu > HX711 sck pin
+double capteur_offset = 841.86;
+
+StrengthSensor capteur(HX711_dout, HX711_sck, capteur_offset);
+
+double valeurCapteur;
+bool newDataReady = 0;
+bool capteurInitialise = 0;
+Chrono resetOffsetChrono;
+int resetOffsetIter;
+MovingAverageFilter<double, double> movingOffset(16);
+double newOffset,rawValue;
+
+
+
+/////////////////////////////////////////////////
+/////////////////// EEPROM  /////////////////////
+/////////////////////////////////////////////////
+
+int eeprom = 0;
 
 /////////////////////////////////////////////////
 /////////////// Frein à inertie /////////////////
@@ -212,6 +218,9 @@ void setup()
   led.ledWelcome();
 
   //capteur
+  EEPROM.get(eeprom,capteur_offset);
+  Serial.print("## offset: ");Serial.println(capteur_offset);
+  capteur.setOffset(capteur_offset);
   capteur.setSamplesInUse(4); //16 le défaut
 
   pinMode(powerPin,INPUT_PULLUP);
@@ -419,6 +428,8 @@ void loop()
         movingOffset.push(&rawValue,&newOffset);
       }
       if(transition70()){
+        Serial.print(" ## capteur valeur: ");Serial.println(newOffset);
+        EEPROM.put(eeprom,newOffset);
         capteur.setOffset(newOffset);
         resetOffsetIter = 0;
         resetOffsetChrono.restart();
