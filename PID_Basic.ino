@@ -34,11 +34,11 @@ double newOffset,rawValue;
 
 const bool debugPython = 0;
 const bool debug = 1;
-const bool debugMotor = 1;
-const bool debugFrein = 1;
+const bool debugMotor = 0;
+const bool debugFrein = 0;
 const bool debugCapteur = 0;
-const bool debugOther =1;
-const bool old = 1;
+const bool debugOther =0;
+const bool old = 0;
 
 
 /////////////////////////////////////////////////
@@ -242,14 +242,14 @@ void loop()
 ////////////////////////////////////////////////////:
 
     if(etat == INITIALISATION){
-      Serial.println("ah les filles ah les filles");
+      //Serial.println("ah les filles ah les filles");
       //switchCtrl(false);
       led.ledState(etat);
       moteur.setMoteurState(STOPPED);
       capteur.setThresholdSensor(0.5);
       switchCtrl(powerCtrl);
       
-      if(resetOffsetChrono.elapsed()>500){
+      if(resetOffsetChrono.elapsed()>1000){
         resetOffsetIter=0;
         resetOffsetChrono.stop();
       }
@@ -406,17 +406,21 @@ void loop()
       /*
        * On attend 500ms puis la valeur actuelle du capteur est stockée et lissée sur 32 valeurs
        */
-      led.ledState(etat);
+      //led.ledState(etat);
       if(resetOffsetIter!=10)
         resetOffsetChrono.restart();
       resetOffsetIter=10;
       if(resetOffsetChrono.elapsed()>500){
-        led.ledFail(etat);
+        if(millis()%500>250)
+          led.ledFail(etat);
+        else
+          led.ledFail(etat-1);
         rawValue=capteur.getRaw();
         movingOffset.push(&rawValue,&newOffset);
       }
-      if(transition71()){
+      if(transition70()){
         capteur.setOffset(newOffset);
+        resetOffsetIter = 0;
         resetOffsetChrono.restart();
         resetOffsetChrono.stop();
         etat = INITIALISATION;
@@ -488,8 +492,8 @@ bool transition52(){
 bool transition51(){
   return (etat == FREINAGE && !chronoFrein.isRunning() && vitesseMoyenne < 1.0  && valeurCapteur >= 0.0 && valeurCapteur < alpha && isCtrlAlive  && !motorBrakeMode);
 }
-bool transition71(){
-  return (etat == RESET_CAPTEUR && !isCtrlAlive && !motorBrakeMode);
+bool transition70(){
+  return (etat == RESET_CAPTEUR && !isCtrlAlive && !motorBrakeMode && resetOffsetChrono.elapsed()>3000);
 }
 bool transition0(){
   return (!isCtrlAlive || !initialisationCapteur());
@@ -718,14 +722,15 @@ void debugMessage()
   Serial.print("Capteur :");  Serial.print(valeurCapteur);  Serial.print("\t");
 //  Serial.print("Moteur state :");  Serial.print(moteur.getMoteurState());  Serial.print("\t");
   Serial.print("Etat :");  Serial.print(etat);  Serial.print("\t");  
-  Serial.print("chrono :");  Serial.print(chronoFrein.isRunning());  Serial.print(" : ");  Serial.print(chronoFrein.elapsed());  Serial.print("\t");
-  Serial.print("isFlowing: ");Serial.print(isFlowing);  Serial.print(" : ");  Serial.print(flowingChrono.elapsed());  Serial.print("\t");
-  Serial.print("stoppedChrono :"); Serial.print(stoppedChrono.elapsed());  Serial.print("\t  | ");
-  Serial.print("Ampere (raw - float): ");Serial.print(wattmetre.getCurrentRaw(true));Serial.print(" - ");Serial.print(wattmetre.getCurrent());  Serial.print("A\t");
+  Serial.print("BRakeMotor pin :");  Serial.print(motorBrakeMode);  Serial.print("\t");  Serial.print(resetOffsetIter);   Serial.print("\t"); Serial.print(resetOffsetChrono.elapsed()); 
+//  Serial.print("chrono :");  Serial.print(chronoFrein.isRunning());  Serial.print(" : ");  Serial.print(chronoFrein.elapsed());  Serial.print("\t");
+//  Serial.print("isFlowing: ");Serial.print(isFlowing);  Serial.print(" : ");  Serial.print(flowingChrono.elapsed());  Serial.print("\t");
+//  Serial.print("stoppedChrono :"); Serial.print(stoppedChrono.elapsed());  Serial.print("\t  | ");
+//  Serial.print("Ampere (raw - float): ");Serial.print(wattmetre.getCurrentRaw(true));Serial.print(" - ");Serial.print(wattmetre.getCurrent());  Serial.print("A\t");
 //  Serial.print(wattmetre.getTension());  Serial.print("V\t");
-  Serial.print(wattmetre.getPower());  Serial.print("W\t");
-  Serial.print(wattmetre.getState());  Serial.print("\t");
-  Serial.print("Kd: ");Serial.print(Kd);  Serial.print("\t");
+//  Serial.print(wattmetre.getPower());  Serial.print("W\t");
+//  Serial.print(wattmetre.getState());  Serial.print("\t");
+//  Serial.print("Kd: ");Serial.print(Kd);  Serial.print("\t");
   Serial.println();
 }
 
