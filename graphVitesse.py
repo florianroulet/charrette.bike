@@ -67,7 +67,7 @@ class serialPlot:
             self.dataX.append(vitesse)    # we get the latest data point and append it to our array
             self.dataY.append(etat)
             self.dataZ.append(capteur)
-            self.dataA.append(pwm)
+            self.dataA.append(pwm/12.75)
             self.csvData.append([vitesse,etat,pwm,capteur]);
 
 
@@ -118,7 +118,7 @@ def main():
     xmin = 0
     xmax = maxPlotLength
     ymin = 0
-    ymax = 260
+    ymax = 22
     fig = plt.figure()
     ax = plt.axes(xlim=(xmin, xmax), ylim=(float(ymin - (ymax - ymin) / 10), float(ymax + (ymax - ymin) / 10)))
     ax.set_title('Arduino Analog Read')

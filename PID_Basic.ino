@@ -13,7 +13,7 @@
 /////////////// Debug ///////////////////////////
 /////////////////////////////////////////////////
 
-const bool debugPython = 0;
+const bool debugPython = 1;
 const bool debug = 1;
 const bool debugMotor = 0;
 const bool debugFrein = 0;
@@ -72,7 +72,7 @@ MoteurEBike moteur = MoteurEBike();
 ///////////////// PID ///////////////////////////
 /////////////////////////////////////////////////
 
-double Kp = 6.5, Ki = 3.25, Kd = 0.1;
+double Kp = 2, Ki = 13, Kd = 0.1;
 
 double sortieMoteur;    //output
 //double valeurCapteur;   //input (valeurCapteur_ mais = 0 si < à un seuil
@@ -160,7 +160,7 @@ int etat = INITIALISATION;
 
 float alpha = 1.5;  //seuil au dessus duquel le PID se calcule et se lance
 float beta = -3.0;  //seuil en deça duquel on passe sur déccélération (pwm=0, pid manual)
-float gamma = -6.0; // seuil en deça duquel on passe sur du freinage
+float gamma = -4.0; // seuil en deça duquel on passe sur du freinage
 
 
 int powerPin = old?0:A3; // pin pour allumer le controleur            Jaune
@@ -428,7 +428,7 @@ void loop()
         movingOffset.push(&rawValue,&newOffset);
       }
       if(transition70()){
-        Serial.print(" ## capteur valeur: ");Serial.println(newOffset);
+      //  Serial.print(" ## capteur valeur: ");Serial.println(newOffset);
         EEPROM.put(eeprom,newOffset);
         capteur.setOffset(newOffset);
         resetOffsetIter = 0;
@@ -440,14 +440,14 @@ void loop()
 
 
     else{
-      Serial.println("Sortie de cas");
+    //  Serial.println("Sortie de cas");
       led.ledFail(OTHER);
     }
 
 
   if (debugPython) {
 
-    envoi(Kd);
+    envoi(vitesseMoyenne);
     envoi(sortieMoteur);
     envoi(valeurCapteur);
     envoiInt(etat);
@@ -621,10 +621,10 @@ void walkPinInterrupt(){
 
 void setPIDMode(bool walkOrNot){
   if(walkOrNot){
-    myPID.SetTunings(6.5,3.25,0.1);
+    myPID.SetTunings(2,7,0.1);
   }
   else{  
-    myPID.SetTunings(12,6,0.1);
+    myPID.SetTunings(2,13,0.1);
   }
 }
 
@@ -657,11 +657,11 @@ void flowingOrNot(){
   /*
    * Pas bon, si ça bloque dès le démarrageet qu'on passe pas en Flowing
    */
-   Serial.println("flowingOrNot");
+  // Serial.println("flowingOrNot");
   // if(walkMode){
     if(wattmetre.getState() == 3  && sortieMoteur>115){
       isFlowing=1;
-      Serial.println("moteur tourne, rendben");
+    //  Serial.println("moteur tourne, rendben");
       stoppedChrono.stop();
     }
     else if(sortieMoteur>115 && wattmetre.getState() ==1){
@@ -671,13 +671,13 @@ void flowingOrNot(){
         stoppedChrono.restart();
       else if(stoppedChrono.elapsed()>500){
         sortieMoteur=0;
-        Serial.print("freeze, don't move");
+      //  Serial.print("freeze, don't move");
        // delay(10);
         stoppedChrono.restart();
       }
    }
    else{
-    Serial.println("autre cas, batterie viide?");
+ //   Serial.println("autre cas, batterie viide?");
    }
 }
 
