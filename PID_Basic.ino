@@ -621,14 +621,10 @@ void walkPinInterrupt(){
 
 void setPIDMode(bool walkOrNot){
   if(walkOrNot){
-    Kp = 6.5;
-    Ki = 3.25;
-    Kd = 0.1;
+    myPID.SetTunings(6.5,3.25,0.1);
   }
-  else{
-    Kp = 12;
-    Ki = 6;
-    Kd = 0.1;
+  else{  
+    myPID.SetTunings(12,6,0.1);
   }
 }
 
