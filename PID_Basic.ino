@@ -22,6 +22,10 @@ StrengthSensor capteur(HX711_dout, HX711_sck, capteur_offset);
 double valeurCapteur;
 bool newDataReady = 0;
 bool capteurInitialise = 0;
+Chrono resetOffsetChrono;
+int resetOffsetIter;
+MovingAverageFilter<double, double> movingOffset(16);
+double newOffset,rawValue;
 
 
 /////////////////////////////////////////////////
@@ -30,11 +34,11 @@ bool capteurInitialise = 0;
 
 const bool debugPython = 0;
 const bool debug = 1;
-const bool debugMotor = 0;
+const bool debugMotor = 1;
 const bool debugFrein = 1;
 const bool debugCapteur = 0;
 const bool debugOther =1;
-const bool old = 0;
+const bool old = 1;
 
 
 /////////////////////////////////////////////////
@@ -121,7 +125,7 @@ RemorqueLed led = RemorqueLed(maxTraction, seuilTractionNulle, pwmMin, pwmMax);
 /////////////////////////////////////////////////
 
 Wattmeter wattmetre;
-
+ 
 int amPin = old?A4:A6;    // select the input pin for the potentiometer  vert
 int vPin = old?A5:A7;    // select the input pin for the potentiometer   jaune
 float amCalib = 28.84;
@@ -141,7 +145,8 @@ enum etats_enum {INITIALISATION,  //0
                  STATU_QUO,       //3
                  DECCELERATION,   //4
                  FREINAGE,        //5
-                 MARCHE           //6
+                 MARCHE,          //6
+                 RESET_CAPTEUR    //7
                 };
 
 int etat = INITIALISATION;
@@ -229,6 +234,8 @@ void loop()
     capteur.update(&newDataReady,&valeurCapteur);
 
   wattmetre.update();
+  
+
 
 ////////////////////////////////////////////////////:
 ///////////////////  0  ////////////////////////////
@@ -241,11 +248,20 @@ void loop()
       moteur.setMoteurState(STOPPED);
       capteur.setThresholdSensor(0.5);
       switchCtrl(powerCtrl);
+      
+      if(resetOffsetChrono.elapsed()>500){
+        resetOffsetIter=0;
+        resetOffsetChrono.stop();
+      }
+      
       if(transition5()){
         etat = FREINAGE;
       }
       else if(transition01()){
         etat = ATTENTE;
+      }
+      else if(transition07()){
+        etat = RESET_CAPTEUR;
       }
     }
 ////////////////////////////////////////////////////:
@@ -258,6 +274,10 @@ void loop()
       led.ledState(etat);
       moteur.setMoteurState(STOPPED);
       capteur.setThresholdSensor(0.5);
+      
+      resetOffsetIter=0;
+      resetOffsetChrono.stop();
+      
       if(transition5()){
         etat = FREINAGE;
       }
@@ -364,6 +384,9 @@ void loop()
       sortieMoteur=pwmMin;
       capteur.setThresholdSensor(0.5);
       
+      resetOffsetIter=0;
+      resetOffsetChrono.stop();
+      
       if(transition5()){
         etat = FREINAGE;
       }
@@ -374,6 +397,32 @@ void loop()
       else if(transition51())
         etat = ATTENTE;
     }
+
+////////////////////////////////////////////////////:
+///////////////////  7  ////////////////////////////
+////////////////////////////////////////////////////:
+
+    else if(etat == RESET_CAPTEUR){
+      /*
+       * On attend 500ms puis la valeur actuelle du capteur est stockée et lissée sur 32 valeurs
+       */
+      led.ledState(etat);
+      if(resetOffsetIter!=10)
+        resetOffsetChrono.restart();
+      resetOffsetIter=10;
+      if(resetOffsetChrono.elapsed()>500){
+        led.ledFail(etat);
+        rawValue=capteur.getRaw();
+        movingOffset.push(&rawValue,&newOffset);
+      }
+      if(transition71()){
+        capteur.setOffset(newOffset);
+        resetOffsetChrono.restart();
+        resetOffsetChrono.stop();
+        etat = INITIALISATION;
+      }
+    }
+
 
     else{
       Serial.println("Sortie de cas");
@@ -409,8 +458,14 @@ bool transition01(){
   //Serial.println();
   return (etat == INITIALISATION && initialisationCapteur() && vitesseMoyenne < 1.0 && isCtrlAlive);
 }
+bool transition07(){
+  return (etat == INITIALISATION && resetOffsetIter>3 && !isCtrlAlive);
+}
 bool transition12(){
   return (etat == ATTENTE && valeurCapteur>alpha && isCtrlAlive);
+}
+bool transition15(){
+  return (etat == ATTENTE && valeurCapteur < gamma || chronoFrein.elapsed()>t1 && isCtrlAlive);
 }
 bool transition23(){
   return (etat == ROULE && (valeurCapteur<0.5 || chronoFrein.elapsed()>t1) && vitesseMoyenne > 0 && isCtrlAlive);
@@ -433,8 +488,8 @@ bool transition52(){
 bool transition51(){
   return (etat == FREINAGE && !chronoFrein.isRunning() && vitesseMoyenne < 1.0  && valeurCapteur >= 0.0 && valeurCapteur < alpha && isCtrlAlive  && !motorBrakeMode);
 }
-bool transition15(){
-  return (etat == ATTENTE && valeurCapteur < gamma || chronoFrein.elapsed()>t1 && isCtrlAlive);
+bool transition71(){
+  return (etat == RESET_CAPTEUR && !isCtrlAlive && !motorBrakeMode);
 }
 bool transition0(){
   return (!isCtrlAlive || !initialisationCapteur());
@@ -516,8 +571,21 @@ void powerPinInterrupt(){
   switchCtrl(powerCtrl);
 }
 void motorBrakePinInterrupt(){
+  /* 
+   *  Interruption pour activer le frein moteur
+   *  
+   *  cette interruption sera utilisée aussi pour réinitialiser le zéro du capteur de force quand le controleur est éteint.
+   *  L'activer 3 fois de suite fera passer dans l'état 6 qui est celui de recalcul du zéro du capteur de force.
+   */
+  
   if(digitalRead(motorBrakePin)){
     motorBrakeMode=1;
+
+    // reset capteur de force
+    if(powerCtrl == 0 && etat == INITIALISATION){
+      resetOffsetChrono.restart();
+      resetOffsetIter++;
+    }
   }
   else
     motorBrakeMode=0;
