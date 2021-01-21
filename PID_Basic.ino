@@ -73,6 +73,8 @@ MoteurEBike moteur = MoteurEBike();
 /////////////////////////////////////////////////
 
 double Kp = 2, Ki = 13, Kd = 0.1;
+double K1[3]={2,13,0.1};
+double K2[3]={2,0,0.1};
 
 double sortieMoteur;    //output
 //double valeurCapteur;   //input (valeurCapteur_ mais = 0 si < à un seuil
@@ -80,7 +82,7 @@ double consigneCapteur = 0; //setpoint
 float pwmMin = 100, pwmMax = 230;
 Chrono resetPID;
 
-PID myPID(&valeurCapteur, &sortieMoteur, &consigneCapteur, Kp, Ki, Kd, REVERSE);
+PID myPID(&valeurCapteur, &sortieMoteur, &consigneCapteur, K2[0], K2[1], K2[3], REVERSE);
 
 
 
@@ -158,7 +160,7 @@ enum etats_enum {INITIALISATION,  //0
 int etat = INITIALISATION;
 
 
-float alpha = 1.5;  //seuil au dessus duquel le PID se calcule et se lance
+float alpha = 1;  //seuil au dessus duquel le PID se calcule et se lance
 float beta = -3.0;  //seuil en deça duquel on passe sur déccélération (pwm=0, pid manual)
 float gamma = -4.0; // seuil en deça duquel on passe sur du freinage
 
@@ -221,7 +223,7 @@ void setup()
   EEPROM.get(eeprom,capteur_offset);
   Serial.print("## offset: ");Serial.println(capteur_offset);
   capteur.setOffset(capteur_offset);
-  capteur.setSamplesInUse(4); //16 le défaut
+  capteur.setSamplesInUse(8); //16 le défaut
 
   pinMode(powerPin,INPUT_PULLUP);
   pinMode(motorBrakePin,INPUT_PULLUP);
@@ -450,7 +452,7 @@ void loop()
     envoi(vitesseMoyenne);
     envoi(sortieMoteur);
     envoi(valeurCapteur);
-    envoiInt(etat);
+    envoiInt(myPID.GetKi());
    // envoiChrono(chronoFrein.elapsed());
     envoiFin();
   }
@@ -621,10 +623,10 @@ void walkPinInterrupt(){
 
 void setPIDMode(bool walkOrNot){
   if(walkOrNot){
-    myPID.SetTunings(2,7,0.1);
+    myPID.SetTunings(K2[1],K2[2],K2[3]);
   }
   else{  
-    myPID.SetTunings(2,13,0.1);
+    myPID.SetTunings(K1[1],K1[2],K1[3]);
   }
 }
 
