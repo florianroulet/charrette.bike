@@ -13,7 +13,7 @@
 /////////////// Debug ///////////////////////////
 /////////////////////////////////////////////////
 
-const bool debugPython = 1;
+const bool debugPython = 0;
 const bool debug = 1;
 const bool debugMotor = 0;
 const bool debugFrein = 0;
@@ -74,7 +74,7 @@ MoteurEBike moteur = MoteurEBike();
 
 double Kp = 2, Ki = 13, Kd = 0.1;
 double K1[3]={2,13,0.1};
-double K2[3]={2,0,0.1};
+double K2[3]={2,1,0.1};
 
 double sortieMoteur;    //output
 //double valeurCapteur;   //input (valeurCapteur_ mais = 0 si < à un seuil
@@ -168,6 +168,11 @@ float gamma = -4.0; // seuil en deça duquel on passe sur du freinage
 int powerPin = old?0:A3; // pin pour allumer le controleur            Jaune
 int motorBrakePin = old?0:A4; // pin pour activer le mode freinage    Vert
 int walkPin = old?0:A5; // pin pour activer le mode piéton;           Rouge
+Chrono powerChrono,motorBrakeChrono,walkChrono;
+bool powerNewState,motorBrakeNewState,walkNewState=0;
+int debounceTime = 100;
+
+
 
 bool powerCtrl = old?1:0;
 bool walkMode = 0;
@@ -196,7 +201,6 @@ void setup()
   attachPCINT(digitalPinToPCINT(moteur.getUPin()), interruptU, CHANGE);
   attachPCINT(digitalPinToPCINT(moteur.getVPin()), interruptV, CHANGE);
 
-
   //PID
   myPID.SetMode(MANUAL);
   myPID.SetOutputLimits(pwmMin, pwmMax);
@@ -207,7 +211,6 @@ void setup()
   pinMode(ctrlSwitch, OUTPUT);
   digitalWrite(ctrlSwitch, false);
   attachPCINT(digitalPinToPCINT(ctrlAlive),interruptCtrlAlive,CHANGE);
-
   
   // Wattmetre
   wattmetre = Wattmeter(amPin,vPin,amCalib,vCalib,36);
@@ -231,11 +234,12 @@ void setup()
   attachPCINT(digitalPinToPCINT(powerPin), powerPinInterrupt, CHANGE);
   attachPCINT(digitalPinToPCINT(motorBrakePin), motorBrakePinInterrupt, CHANGE);
   attachPCINT(digitalPinToPCINT(walkPin), walkPinInterrupt, CHANGE);
-
+  powerChrono.restart();
+  powerChrono.stop();
+  motorBrakeChrono.restart();
+  motorBrakeChrono.stop();
 
 }
-
-
 
 void loop()
 {
@@ -245,6 +249,20 @@ void loop()
     capteur.update(&newDataReady,&valeurCapteur);
 
   wattmetre.update();
+
+  if(powerChrono.elapsed()>debounceTime && digitalRead(powerPin)==powerNewState){
+    powerCtrl=powerNewState;
+    powerChrono.restart();
+    powerChrono.stop();
+    switchCtrl(powerCtrl);
+  }
+
+  if(motorBrakeChrono.elapsed()>debounceTime && digitalRead(motorBrakePin)==motorBrakeNewState){
+    motorBrakeMode=motorBrakeNewState;
+    motorBrakeChrono.restart();
+    motorBrakeChrono.stop();
+  }
+
   
 
 
@@ -580,12 +598,17 @@ void haltt() {
 
 void powerPinInterrupt(){
   if(digitalRead(powerPin)){
-    powerCtrl=1;
+    powerNewState=true;
+    powerChrono.restart();
+    //powerCtrl=1;
   }
-  else
-    powerCtrl=0;
+  else{
+    powerNewState=false;
+    powerChrono.restart();
+  }
 
-  switchCtrl(powerCtrl);
+
+ // switchCtrl(powerCtrl);
 }
 void motorBrakePinInterrupt(){
   /* 
@@ -596,7 +619,9 @@ void motorBrakePinInterrupt(){
    */
   
   if(digitalRead(motorBrakePin)){
-    motorBrakeMode=1;
+    //motorBrakeMode=1;
+    motorBrakeNewState=true;
+    motorBrakeChrono.restart();
 
     // reset capteur de force
     if(powerCtrl == 0 && etat == INITIALISATION){
@@ -604,8 +629,10 @@ void motorBrakePinInterrupt(){
       resetOffsetIter++;
     }
   }
-  else
-    motorBrakeMode=0;
+  else{
+    motorBrakeNewState=false;
+    motorBrakeChrono.restart();
+  }
 }
 void walkPinInterrupt(){
   if(digitalRead(walkPin))
@@ -728,7 +755,7 @@ void debugMessage()
   // Serial.print(data);
 //  Serial.print(" vitesse :");  Serial.print(vitesseMoyenne);  Serial.print("\t");
   Serial.print("sortie Moteur :");  Serial.print(sortieMoteur);  Serial.print("\t");
-  Serial.print("Capteur :");  Serial.print(valeurCapteur);  Serial.print("\t");
+  Serial.print("Capteur :");  Serial.print(valeurCapteur);  Serial.print("\t");Serial.print(capteur.getRaw());Serial.print("\t");
 //  Serial.print("Moteur state :");  Serial.print(moteur.getMoteurState());  Serial.print("\t");
   Serial.print("Etat :");  Serial.print(etat);  Serial.print("\t");  
   Serial.print("BRakeMotor pin :");  Serial.print(motorBrakeMode);  Serial.print("\t");  Serial.print(resetOffsetIter);   Serial.print("\t"); Serial.print(resetOffsetChrono.elapsed()); 
