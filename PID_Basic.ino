@@ -40,6 +40,15 @@ MovingAverageFilter<double, double> movingOffset(16);
 double newOffset,rawValue;
 
 
+   DifferentialFilter<double, unsigned long> diffCapteur;
+
+   // need to specify the value and timestamp data type
+   Reading<double, unsigned long> rCapteur;
+
+   // output of a differential filter is a `Reading` with the value type of `Differential`
+   Reading<Differential<double>, unsigned long> dCapteur;
+
+
 
 /////////////////////////////////////////////////
 /////////////////// EEPROM  /////////////////////
@@ -238,15 +247,21 @@ void setup()
   powerChrono.stop();
   motorBrakeChrono.restart();
   motorBrakeChrono.stop();
-
+rCapteur.timestamp=0;
 }
 
 void loop()
 {
  // checkCtrl();
   miseAJourVitesse();
-  if(capteurInitialise)
+  if(capteurInitialise){
     capteur.update(&newDataReady,&valeurCapteur);
+  rCapteur.value=valeurCapteur;
+  rCapteur.timestamp+=1;//millis();
+  }
+
+  if(valeurCapteur>30)
+    Serial.println("ERREUR ELM?");
 
   wattmetre.update();
 
@@ -263,6 +278,19 @@ void loop()
     motorBrakeChrono.stop();
   }
 
+
+  
+     if (diffCapteur.push(&rCapteur, &dCapteur)) {
+      /*
+       Serial.print(rCapteur.value);              Serial.print("\t");
+       Serial.print(rCapteur.timestamp);          Serial.print("\t");
+       Serial.print(dCapteur.value.position);     Serial.print("\t");
+       Serial.print(dCapteur.value.speed);        Serial.print("\t");
+       Serial.println(dCapteur.value.acceleration);
+       */
+     }
+
+     
   
 
 
