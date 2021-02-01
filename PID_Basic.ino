@@ -31,6 +31,16 @@ double capteur_offset = 841.86;
 
 StrengthSensor capteur(HX711_dout, HX711_sck, capteur_offset);
 
+DifferentialFilter<double, unsigned long> diffCapteur;
+
+// need to specify the value and timestamp data type
+Reading<double, unsigned long> rCapteur;
+
+// output of a differential filter is a `Reading` with the value type of `Differential`
+Reading<Differential<double>, unsigned long> dCapteur;
+
+
+
 double valeurCapteur;
 bool newDataReady = 0;
 bool capteurInitialise = 0;
@@ -38,16 +48,6 @@ Chrono resetOffsetChrono;
 int resetOffsetIter;
 MovingAverageFilter<double, double> movingOffset(16);
 double newOffset,rawValue;
-
-
-   DifferentialFilter<double, unsigned long> diffCapteur;
-
-   // need to specify the value and timestamp data type
-   Reading<double, unsigned long> rCapteur;
-
-   // output of a differential filter is a `Reading` with the value type of `Differential`
-   Reading<Differential<double>, unsigned long> dCapteur;
-
 
 
 /////////////////////////////////////////////////
@@ -82,16 +82,16 @@ MoteurEBike moteur = MoteurEBike();
 /////////////////////////////////////////////////
 
 double Kp = 2, Ki = 13, Kd = 0.1;
-double K1[3]={2,13,0.1};
-double K2[3]={2,1,0.1};
+double K1[3]={2,8,0.1};
+double K2[3]={1,4,0.1};
 
 double sortieMoteur;    //output
 //double valeurCapteur;   //input (valeurCapteur_ mais = 0 si < à un seuil
 double consigneCapteur = 0; //setpoint
-float pwmMin = 100, pwmMax = 230;
+float pwmMin = 100, pwmMax = 240;
 Chrono resetPID;
 
-PID myPID(&valeurCapteur, &sortieMoteur, &consigneCapteur, K2[0], K2[1], K2[3], REVERSE);
+PID myPID(&valeurCapteur, &sortieMoteur, &consigneCapteur, K2[0], K2[1], K2[2], REVERSE);
 
 
 
@@ -149,8 +149,8 @@ float amCalib = 28.84;
 float vCalib = 22.41;
 
 bool isFlowing;
-Chrono flowingChrono;
-Chrono stoppedChrono;
+Chrono flowingChrono; // chrono pour s'avoir depuis quand on envoie un pwm
+Chrono stoppedChrono; // chrono pour s'avoir depuis quand on a détecté un arrêt.
 
 /////////////////////////////////////////////////
 //////////////// Etats //////////////////////////
@@ -171,7 +171,7 @@ int etat = INITIALISATION;
 
 float alpha = 1;  //seuil au dessus duquel le PID se calcule et se lance
 float beta = -3.0;  //seuil en deça duquel on passe sur déccélération (pwm=0, pid manual)
-float gamma = -4.0; // seuil en deça duquel on passe sur du freinage
+float gamma = -6.0; // seuil en deça duquel on passe sur du freinage
 
 
 int powerPin = old?0:A3; // pin pour allumer le controleur            Jaune
@@ -213,7 +213,7 @@ void setup()
   //PID
   myPID.SetMode(MANUAL);
   myPID.SetOutputLimits(pwmMin, pwmMax);
-  myPID.SetSampleTime(100);
+  myPID.SetSampleTime(200);
 
   // Controleur
   pinMode(ctrlAlive, INPUT);
@@ -247,7 +247,7 @@ void setup()
   powerChrono.stop();
   motorBrakeChrono.restart();
   motorBrakeChrono.stop();
-rCapteur.timestamp=0;
+  rCapteur.timestamp=0;
 }
 
 void loop()
@@ -256,12 +256,15 @@ void loop()
   miseAJourVitesse();
   if(capteurInitialise){
     capteur.update(&newDataReady,&valeurCapteur);
-  rCapteur.value=valeurCapteur;
-  rCapteur.timestamp+=1;//millis();
+    rCapteur.value=valeurCapteur;
+    rCapteur.timestamp+=1;//millis();
+    diffCapteur.push(&rCapteur, &dCapteur);
   }
 
-  if(valeurCapteur>30)
+  if(valeurCapteur>30){
     Serial.println("ERREUR ELM?");
+   // valeurCapteur=0;
+  }
 
   wattmetre.update();
 
@@ -279,16 +282,6 @@ void loop()
   }
 
 
-  
-     if (diffCapteur.push(&rCapteur, &dCapteur)) {
-      /*
-       Serial.print(rCapteur.value);              Serial.print("\t");
-       Serial.print(rCapteur.timestamp);          Serial.print("\t");
-       Serial.print(dCapteur.value.position);     Serial.print("\t");
-       Serial.print(dCapteur.value.speed);        Serial.print("\t");
-       Serial.println(dCapteur.value.acceleration);
-       */
-     }
 
      
   
@@ -335,6 +328,11 @@ void loop()
       resetOffsetIter=0;
       resetOffsetChrono.stop();
       
+      if(flowingChrono.isRunning()){
+        flowingChrono.restart();
+        flowingChrono.stop();
+      }
+      
       if(transition5()){
         etat = FREINAGE;
       }
@@ -354,6 +352,9 @@ void loop()
       moteur.setMoteurState(SPINNING);
       myPID.SetMode(AUTOMATIC);
       miseAJourPID();
+     // if(!flowingChrono.isRunning()){
+     //   flowingChrono.restart(); // 
+     // }
       /*
       if(wattmetre.getState()==3)
         led.ledPrint(valeurCapteur,sortieMoteur);
@@ -371,8 +372,8 @@ void loop()
       }
       else if(transition0())
         etat = INITIALISATION;
-    //  else if(transition23())
-    //    etat = STATU_QUO;
+      else if(transition23())
+        etat = STATU_QUO;
     }
 
 ////////////////////////////////////////////////////:
@@ -380,6 +381,7 @@ void loop()
 ////////////////////////////////////////////////////:
 
     else if ( etat == STATU_QUO){
+      moteur.setMoteurState(SPINNING);
 
       led.ledState(etat);
   /*
@@ -412,10 +414,16 @@ void loop()
     else if( etat == DECCELERATION){
 
       led.ledState(etat);
-    //  moteur.setMoteurState(STOPPED);
-    //  sortieMoteur=pwmMin;
-      myPID.SetMode(AUTOMATIC);
-      miseAJourPID();
+      moteur.setMoteurState(STOPPED);
+      myPID.SetMode(MANUAL);
+      sortieMoteur=pwmMin;
+     // myPID.SetMode(AUTOMATIC);
+     // miseAJourPID();  
+     
+     if(flowingChrono.isRunning()){
+        flowingChrono.restart();
+        flowingChrono.stop();
+      }
       
       if(transition5()){
         etat = FREINAGE;
@@ -444,13 +452,18 @@ void loop()
       resetOffsetIter=0;
       resetOffsetChrono.stop();
       
+      if(flowingChrono.isRunning()){
+        flowingChrono.restart();
+        flowingChrono.stop();
+      }
+      
       if(transition5()){
         etat = FREINAGE;
       }
       else if(transition0())
         etat = INITIALISATION;
       else   if(transition52())
-        etat = ROULE;
+        etat = ATTENTE; //ROULE;
       else if(transition51())
         etat = ATTENTE;
     }
@@ -492,7 +505,20 @@ void loop()
       led.ledFail(OTHER);
     }
 
+ /*
+ if(etat==ROULE){
+    if(millis()%2000>1000){
+      sortieMoteur=240;
+      moteur.setMoteurState(SPINNING);
+    }
+    else{
+      sortieMoteur=0;
+      moteur.setMoteurState(BRAKING);
+      }
+  }
 
+  */
+    
   if (debugPython) {
 
     envoi(vitesseMoyenne);
@@ -503,13 +529,14 @@ void loop()
     envoiFin();
   }
   else{
-    debugMessage();
+   // if(valeurCapteur>1)
+     debugMessage();
+   // else Serial.println("");
   //  debugTransition();
   //  Serial.println();
   //  Serial.println();
 
   }
-  
   moteur.mettreLesGaz(sortieMoteur);
 
 
@@ -531,7 +558,7 @@ bool transition15(){
   return (etat == ATTENTE && valeurCapteur < gamma || chronoFrein.elapsed()>t1 && isCtrlAlive);
 }
 bool transition23(){
-  return (etat == ROULE && (valeurCapteur<0.5 || chronoFrein.elapsed()>t1) && vitesseMoyenne > 0 && isCtrlAlive);
+  return (etat == ROULE && (valeurCapteur<0.5 || chronoFrein.elapsed()>t1) /*&& vitesseMoyenne > 0 &*/& isCtrlAlive);
 }
 bool transition32(){
   return (etat == STATU_QUO && valeurCapteur > alpha && !chronoFrein.isRunning() && isCtrlAlive);
@@ -678,10 +705,10 @@ void walkPinInterrupt(){
 
 void setPIDMode(bool walkOrNot){
   if(walkOrNot){
-    myPID.SetTunings(K2[1],K2[2],K2[3]);
+    myPID.SetTunings(K2[0],K2[1],K2[2]);
   }
   else{  
-    myPID.SetTunings(K1[1],K1[2],K1[3]);
+    myPID.SetTunings(K1[0],K1[1],K1[2]);
   }
 }
 
@@ -715,27 +742,52 @@ void flowingOrNot(){
    * Pas bon, si ça bloque dès le démarrageet qu'on passe pas en Flowing
    */
   // Serial.println("flowingOrNot");
-  // if(walkMode){
-    if(wattmetre.getState() == 3  && sortieMoteur>115){
-      isFlowing=1;
-    //  Serial.println("moteur tourne, rendben");
-      stoppedChrono.stop();
+  
+    if(wattmetre.getCurrent() > 0.0){
+      Serial.println("A");
+        isFlowing=1;
+        if(!flowingChrono.isRunning()){
+          flowingChrono.restart();
+        }
+        if(stoppedChrono.isRunning()){
+          stoppedChrono.restart();
+          stoppedChrono.stop();
+        }
+        
     }
-    else if(sortieMoteur>115 && wattmetre.getState() ==1){
-      led.ledFail(etat);
-      isFlowing=0;
-      if(!stoppedChrono.isRunning())
-        stoppedChrono.restart();
-      else if(stoppedChrono.elapsed()>500){
-        sortieMoteur=0;
-      //  Serial.print("freeze, don't move");
-       // delay(10);
+    else{
+      if(flowingChrono.elapsed()>1000){
+        if(isFlowing){
+      Serial.println("B");
+            led.ledFail(etat);
+            isFlowing=0;
+            if(flowingChrono.isRunning()){
+              flowingChrono.restart();
+              flowingChrono.stop();
+            }
+            if(!stoppedChrono.isRunning())
+              stoppedChrono.restart();
+          }
+      }
+      else if(stoppedChrono.elapsed()>200 ){
+      Serial.println("D");
+        moteur.setMoteurState(SPINNING);
         stoppedChrono.restart();
       }
-   }
-   else{
- //   Serial.println("autre cas, batterie viide?");
-   }
+      else if(stoppedChrono.elapsed()>100 && moteur.getMoteurState()==SPINNING){
+      Serial.println("C");
+        moteur.setMoteurState(STOPPED);
+       // sortieMoteur=0;
+       // etat = ROULE;
+        led.ledFail(etat);
+       // if(!stoppedChrono.isRunning())
+      }
+      else{
+        Serial.print("attente..."); 
+      Serial.println("E"); 
+      }
+    }
+    
 }
 
 void checkCtrl(){
@@ -783,19 +835,31 @@ void debugMessage()
   // Serial.print(data);
 //  Serial.print(" vitesse :");  Serial.print(vitesseMoyenne);  Serial.print("\t");
   Serial.print("sortie Moteur :");  Serial.print(sortieMoteur);  Serial.print("\t");
-  Serial.print("Capteur :");  Serial.print(valeurCapteur);  Serial.print("\t");Serial.print(capteur.getRaw());Serial.print("\t");
-//  Serial.print("Moteur state :");  Serial.print(moteur.getMoteurState());  Serial.print("\t");
-  Serial.print("Etat :");  Serial.print(etat);  Serial.print("\t");  
-  Serial.print("BRakeMotor pin :");  Serial.print(motorBrakeMode);  Serial.print("\t");  Serial.print(resetOffsetIter);   Serial.print("\t"); Serial.print(resetOffsetChrono.elapsed()); 
-//  Serial.print("chrono :");  Serial.print(chronoFrein.isRunning());  Serial.print(" : ");  Serial.print(chronoFrein.elapsed());  Serial.print("\t");
-//  Serial.print("isFlowing: ");Serial.print(isFlowing);  Serial.print(" : ");  Serial.print(flowingChrono.elapsed());  Serial.print("\t");
-//  Serial.print("stoppedChrono :"); Serial.print(stoppedChrono.elapsed());  Serial.print("\t  | ");
-//  Serial.print("Ampere (raw - float): ");Serial.print(wattmetre.getCurrentRaw(true));Serial.print(" - ");Serial.print(wattmetre.getCurrent());  Serial.print("A\t");
-//  Serial.print(wattmetre.getTension());  Serial.print("V\t");
+//  Serial.print("Capteur :");  Serial.print(valeurCapteur);  Serial.print("\t");Serial.print(capteur.getRaw());Serial.print("\t");Serial.print(capteur.getReadIndex());Serial.print("\t");
+  Serial.print("Moteur state :");  Serial.print(moteur.getMoteurState());  Serial.print("\t");
+//  Serial.print("Etat :");  Serial.print(etat);  Serial.print("\t");  
+//  Serial.print("BRakeMotor pin :");  Serial.print(motorBrakeMode);  Serial.print("\t");  Serial.print(resetOffsetIter);   Serial.print("\t"); //Serial.print(resetOffsetChrono.elapsed()); 
+  Serial.print("chrono :");  Serial.print(chronoFrein.isRunning());  Serial.print(" : ");  Serial.print(chronoFrein.elapsed());  Serial.print("\t");
+  Serial.print("isFlowing: ");Serial.print(isFlowing);  Serial.print(" : ");  Serial.print(flowingChrono.elapsed());  Serial.print("\t");
+  Serial.print("stoppedChrono :"); Serial.print(stoppedChrono.elapsed());  Serial.print("\t  | ");
+  Serial.print("Ampere (raw - float): ");Serial.print(wattmetre.getCurrent());  Serial.print("A\t");
+  Serial.print(wattmetre.getTension());  Serial.print("V\t");
 //  Serial.print(wattmetre.getPower());  Serial.print("W\t");
 //  Serial.print(wattmetre.getState());  Serial.print("\t");
 //  Serial.print("Kd: ");Serial.print(Kd);  Serial.print("\t");
+  Serial.print("Kp: ");Serial.print(myPID.GetKp());  Serial.print("\t");
+//  Serial.print("Ki: ");Serial.print(myPID.GetKi());  Serial.print("\t");
+//  Serial.print("Kd: ");Serial.print(myPID.GetKd());  Serial.print("\t");
+/*
+  Serial.print("Capteur: ");Serial.print(rCapteur.value);              Serial.print("\t");
+  Serial.print("Timestamp: ");Serial.print(rCapteur.timestamp);          Serial.print("\t");
+  Serial.print("Pos: ");Serial.print(dCapteur.value.position);     Serial.print("\t");
+  Serial.print("Dérivée 1: ");Serial.print(dCapteur.value.speed);        Serial.print("\t");
+  Serial.print("Dérivée 2: ");Serial.println(dCapteur.value.acceleration);
+  */
+
   Serial.println();
+
 }
 
 void debugTransition(){
