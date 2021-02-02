@@ -352,9 +352,9 @@ void loop()
     moteur.setMoteurState(SPINNING);
     myPID.SetMode(AUTOMATIC);
     miseAJourPID();
-     if(!flowingChrono.isRunning()){
-       flowingChrono.restart(); //
-     }
+    if (!flowingChrono.isRunning()) {
+      flowingChrono.restart(); //
+    }
     /*
       if(wattmetre.getState()==3)
       led.ledPrint(valeurCapteur,sortieMoteur);
@@ -436,7 +436,7 @@ void loop()
     else if (transition0())
       etat = INITIALISATION;
     else  if (transition42())
-    //  etat = ROULE;
+      //  etat = ROULE;
       etat = ATTENTE;
     else if (transition45())
       etat = FREINAGE;
@@ -525,7 +525,7 @@ void loop()
 
   */
 
-    flowingOrNot();
+  flowingOrNot();
 
 
   if (debugPython) {
@@ -751,48 +751,48 @@ void flowingOrNot() {
      Pas bon, si ça bloque dès le démarrageet qu'on passe pas en Flowing
   */
 
-  if(wattmetre.getCurrent()>0.0){
-    if(!flowingChrono.isRunning())
+  if (wattmetre.getCurrent() > 0.0) {
+    if (!flowingChrono.isRunning())
       flowingChrono.restart();
-    if(stoppedChrono.isRunning()){
+    if (stoppedChrono.isRunning()) {
       stoppedChrono.restart();
       stoppedChrono.stop();
     }
-    isFlowing=1;
-    flowingState=1;
+    isFlowing = 1;
+    flowingState = 1;
   }
-  else{
-    if(flowingChrono.elapsed()>1000){
-      isFlowing=0;
+  else {
+    if (flowingChrono.elapsed() > 1000) {
+      isFlowing = 0;
       flowingChrono.restart();
       flowingChrono.stop();
-      flowingState=2;
+      flowingState = 2;
       debugMessage();
     }
-    if(isFlowing==0){
-      if(etat==2 || etat == 3){
-        if(!stoppedChrono.isRunning()){
+    if (isFlowing == 0) {
+      if (etat == 2 || etat == 3) {
+        if (!stoppedChrono.isRunning()) {
           stoppedChrono.restart();
           moteur.setMoteurState(STOPPED);
-          flowingState=3;
+          flowingState = 3;
         }
-        else if(stoppedChrono.elapsed()<300){
-          flowingState=4;
+        else if (stoppedChrono.elapsed() < 300) {
+          flowingState = 4;
         }
         // la condition suivante est pas idéale pck si on loupe le coche que se passe-t-il?
-        else if(stoppedChrono.elapsed()>300 && stoppedChrono.elapsed()<1000){
+        else if (stoppedChrono.elapsed() > 300 && stoppedChrono.elapsed() < 1000) {
           moteur.setMoteurState(SPINNING);
-          sortieMoteur/=2;
-          flowingState=5;
+          sortieMoteur = 120;
+          flowingState = 5;
         }
-        else{
+        else {
           stoppedChrono.restart();
-          flowingState=6;
+          flowingState = 6;
         }
       }
     }
-    else{
-      flowingState=7;
+    else {
+      flowingState = 7;
     }
   }
 
@@ -841,14 +841,14 @@ void debugMessage()
   // sprintf(data, "Acc:\t %d - Frein:\t %d - Dec:\t %d - Pieton:\t %d - Stop:\t %d - Frein levier: \t %d - t1Overflow: \t %d  \t - vitesse: \t  ",
   //         accelerationFlag, freinageFlag, deccelerationFlag, pietonFlag, stopFlag, freinLaposteFlag, timer1Overflow);
   // Serial.print(data);
-    Serial.print(" vitesse :");  Serial.print(vitesseMoyenne);  Serial.print("\t");
+  Serial.print(" vitesse :");  Serial.print(vitesseMoyenne);  Serial.print("\t");
   Serial.print("sortie Moteur :");  Serial.print(sortieMoteur);  Serial.print("\t");
   //  Serial.print("Capteur :");  Serial.print(valeurCapteur);  Serial.print("\t");Serial.print(capteur.getRaw());Serial.print("\t");Serial.print(capteur.getReadIndex());Serial.print("\t");
   Serial.print("Moteur state :");  Serial.print(moteur.getMoteurState());  Serial.print("\t");
   Serial.print("Etat :");  Serial.print(etat);  Serial.print("\t");
   //  Serial.print("BRakeMotor pin :");  Serial.print(motorBrakeMode);  Serial.print("\t");  Serial.print(resetOffsetIter);   Serial.print("\t"); //Serial.print(resetOffsetChrono.elapsed());
   //Serial.print("chrono :");  Serial.print(chronoFrein.isRunning());  Serial.print(" : ");  Serial.print(chronoFrein.elapsed());  Serial.print("\t");
-  Serial.print("flowing: ");Serial.print(flowingState);Serial.print("\t");
+  Serial.print("flowing: "); Serial.print(flowingState); Serial.print("\t");
   Serial.print("isFlowing: "); Serial.print(isFlowing);  Serial.print(" : ");  Serial.print(flowingChrono.elapsed());  Serial.print("\t");
   Serial.print("stoppedChrono :"); Serial.print(stoppedChrono.elapsed());  Serial.print("\t  | ");
   Serial.print("Ampere "); Serial.print(wattmetre.getCurrent());  Serial.print("A\t");
