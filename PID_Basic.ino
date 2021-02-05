@@ -13,13 +13,15 @@
 /////////////// Debug ///////////////////////////
 /////////////////////////////////////////////////
 
-const bool debugPython = 0;
-const bool debug = 1;
-const bool debugMotor = 0;
-const bool debugFrein = 0;
-const bool debugCapteur = 0;
-const bool debugOther = 0;
-const bool old = 0;
+bool debugPython = 0;
+bool debug = 0;
+bool debugCsv =  1;
+bool debugMotor = 0;
+bool debugFrein = 0;
+bool debugCapteur = 0;
+bool debugOther = 0;
+bool old = 0;
+int csvIter = 0;
 
 /////////////////////////////////////////////////
 /////////////// capteur force ///////////////////
@@ -257,8 +259,8 @@ void loop()
   miseAJourVitesse();
   if (capteurInitialise) {
     capteur.update(&newDataReady, &valeurCapteur);
-    rCapteur.value = valeurCapteur;
-    rCapteur.timestamp += 1; //millis();
+    rCapteur.value = valeurCapteur * 1000;
+    rCapteur.timestamp += millis() / 1000;
     diffCapteur.push(&rCapteur, &dCapteur);
   }
 
@@ -534,16 +536,15 @@ void loop()
     envoi(sortieMoteur);
     envoi(valeurCapteur);
     envoiInt(myPID.GetKi());
-    // envoiChrono(chronoFrein.elapsed());
     envoiFin();
   }
-  else {
-    // if(valeurCapteur>1)
+  else if (debugCsv) {
+    printCsv();
+  }
+  else if (debug) {
     debugMessage();
-    // else Serial.println("");
-    //  debugTransition();
-    //  Serial.println();
-    //  Serial.println();
+  }
+  else {
 
   }
   moteur.mettreLesGaz(sortieMoteur);
@@ -841,26 +842,26 @@ void debugMessage()
   // sprintf(data, "Acc:\t %d - Frein:\t %d - Dec:\t %d - Pieton:\t %d - Stop:\t %d - Frein levier: \t %d - t1Overflow: \t %d  \t - vitesse: \t  ",
   //         accelerationFlag, freinageFlag, deccelerationFlag, pietonFlag, stopFlag, freinLaposteFlag, timer1Overflow);
   // Serial.print(data);
-  Serial.print(" vitesse :");  Serial.print(vitesseMoyenne);  Serial.print("\t");
+  // Serial.print(" vitesse :");  Serial.print(vitesseMoyenne);  Serial.print("\t");
   Serial.print("sortie Moteur :");  Serial.print(sortieMoteur);  Serial.print("\t");
-  //  Serial.print("Capteur :");  Serial.print(valeurCapteur);  Serial.print("\t");Serial.print(capteur.getRaw());Serial.print("\t");Serial.print(capteur.getReadIndex());Serial.print("\t");
   Serial.print("Moteur state :");  Serial.print(moteur.getMoteurState());  Serial.print("\t");
   Serial.print("Etat :");  Serial.print(etat);  Serial.print("\t");
   //  Serial.print("BRakeMotor pin :");  Serial.print(motorBrakeMode);  Serial.print("\t");  Serial.print(resetOffsetIter);   Serial.print("\t"); //Serial.print(resetOffsetChrono.elapsed());
   //Serial.print("chrono :");  Serial.print(chronoFrein.isRunning());  Serial.print(" : ");  Serial.print(chronoFrein.elapsed());  Serial.print("\t");
   Serial.print("flowing: "); Serial.print(flowingState); Serial.print("\t");
   Serial.print("isFlowing: "); Serial.print(isFlowing);  Serial.print(" : ");  Serial.print(flowingChrono.elapsed());  Serial.print("\t");
-  Serial.print("stoppedChrono :"); Serial.print(stoppedChrono.elapsed());  Serial.print("\t  | ");
+  Serial.print("stoppedChrono :"); Serial.print(stoppedChrono.elapsed());  Serial.print("\t ");
   Serial.print("Ampere "); Serial.print(wattmetre.getCurrent());  Serial.print("A\t");
-  Serial.print(wattmetre.getTension());  Serial.print("V\t");
-  Serial.print(wattmetre.getPower());  Serial.print("W\t");
-  Serial.print(wattmetre.getState());  Serial.print("\t");
+  //M   Serial.print(wattmetre.getTension());  Serial.print("V\t");
+  // Serial.print(wattmetre.getPower());  Serial.print("W\t");
+  Serial.print("Wattmetre state "); Serial.print(wattmetre.getState());  Serial.print("\t");
   //  Serial.print("Kd: ");Serial.print(Kd);  Serial.print("\t");
   Serial.print("Kp: "); Serial.print(myPID.GetKp());  Serial.print("\t");
   //  Serial.print("Ki: ");Serial.print(myPID.GetKi());  Serial.print("\t");
   //  Serial.print("Kd: ");Serial.print(myPID.GetKd());  Serial.print("\t");
 
-  Serial.print("Capteur: "); Serial.print(rCapteur.value);              Serial.print("\t");
+  Serial.print("Capteur :");  Serial.print(valeurCapteur);  Serial.print("\t");//Serial.print(capteur.getRaw());Serial.print("\t");Serial.print(capteur.getReadIndex());Serial.print("\t");
+  Serial.print("rCapteur: "); Serial.print(rCapteur.value);              Serial.print("\t");
   Serial.print("Timestamp: "); Serial.print(rCapteur.timestamp);          Serial.print("\t");
   // Serial.print("Pos: ");Serial.print(dCapteur.value.position);     Serial.print("\t");
   Serial.print("Dérivée 1: "); Serial.print(dCapteur.value.speed);        Serial.print("\t");
@@ -868,6 +869,73 @@ void debugMessage()
 
 
   Serial.println();
+
+}
+
+void printCsv()
+{
+  
+  if (!csvIter) {
+  //  debugMessage();
+
+    // Serial.print("vitesse,");
+    Serial.print("Iterateur,");
+    Serial.print("sortie Moteur,");
+    Serial.print("Moteur state ,");
+    Serial.print("Etat,");
+    Serial.print("flowing,");
+    Serial.print("isFlowing,");
+    Serial.print("flowingChrono,");
+    Serial.print("stoppedChrono,");
+    Serial.print("Ampere");
+    //   Serial.print("Tension,");
+    // Serial.print("Puissance,");
+    Serial.print("Wattmetre state ,");
+    Serial.print("Kp,");
+    //  Serial.print("Ki,");
+    //  Serial.print("Kd,");
+
+    Serial.print("Capteur,");
+    Serial.print("rCapteur,");
+ /*   Serial.print("Timestamp,Vitesse capteur");
+    Serial.print("Vitesse capteur");
+    Serial.print("Accel capteur");
+    */
+    
+  }
+  else {
+
+    Serial.print(vitesseMoyenne);  Serial.print(",");
+    Serial.print(csvIter);  Serial.print(",");
+    Serial.print(sortieMoteur);  Serial.print(",");
+    Serial.print(moteur.getMoteurState());  Serial.print(",");
+    Serial.print(etat);  Serial.print(",");
+    Serial.print(flowingState); Serial.print(",");
+    Serial.print(isFlowing);  Serial.print(",");
+    Serial.print(flowingChrono.elapsed());  Serial.print(",");
+    Serial.print(stoppedChrono.elapsed());  Serial.print(", ");
+  
+  
+
+  Serial.print(wattmetre.getCurrent());  Serial.print(",");
+    // Serial.print(wattmetre.getTension());  Serial.print(",");
+    // Serial.print(wattmetre.getPower());  Serial.print(",");
+    Serial.print(wattmetre.getState());  Serial.print(",");
+    Serial.print(myPID.GetKp());  Serial.print(",");
+    // Serial.print(myPID.GetKi());  Serial.print(",");
+    // Serial.print(myPID.GetKd());  Serial.print(",");
+
+
+    Serial.print(valeurCapteur);  Serial.print(",");//Serial.print(capteur.getRaw());Serial.print(",");Serial.print(capteur.getReadIndex());Serial.print(",");
+    Serial.print(rCapteur.value);              Serial.print(",");
+    Serial.print(rCapteur.timestamp);          Serial.print(",");
+    Serial.print(dCapteur.value.speed);        Serial.print(",");
+    Serial.print(dCapteur.value.acceleration);
+  }
+    Serial.println();
+
+  csvIter++;
+
 
 }
 
