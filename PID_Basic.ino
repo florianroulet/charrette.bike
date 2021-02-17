@@ -84,8 +84,8 @@ MoteurEBike moteur = MoteurEBike();
 /////////////////////////////////////////////////
 
 double Kp = 2, Ki = 13, Kd = 0.1;
-double K1[3] = {2, 8, 0.1};
-double K2[3] = {1, 4, 0.1};
+double K1[3] = {1, 3, 0};
+double K2[3] = {1, 2, 0};
 
 double sortieMoteur;    //output
 //double valeurCapteur;   //input (valeurCapteur_ mais = 0 si < à un seuil
@@ -93,7 +93,7 @@ double consigneCapteur = 0; //setpoint
 float pwmMin = 100, pwmMax = 240;
 Chrono resetPID;
 
-PID myPID(&valeurCapteur, &sortieMoteur, &consigneCapteur, K2[0], K2[1], K2[2], REVERSE);
+PID myPID(&valeurCapteur, &sortieMoteur, &consigneCapteur, K2[0], K2[1], K2[2], P_ON_M, REVERSE);
 
 
 
@@ -172,9 +172,9 @@ enum etats_enum {INITIALISATION,  //0
 int etat = INITIALISATION;
 
 
-float alpha = 1;  //seuil au dessus duquel le PID se calcule et se lance
-float beta = -3.0;  //seuil en deça duquel on passe sur déccélération (pwm=0, pid manual)
-float gamma = -6.0; // seuil en deça duquel on passe sur du freinage
+float alpha = 2;  //seuil au dessus duquel le PID se calcule et se lance
+float beta = -4.0;  //seuil en deça duquel on passe sur déccélération (pwm=0, pid manual)
+float gamma = -15.0; // seuil en deça duquel on passe sur du freinage
 
 
 int powerPin = old ? 0 : A3; // pin pour allumer le controleur            Jaune
@@ -193,7 +193,14 @@ bool motorBrakeMode = 0;
 
 void setup()
 {
+
   Serial.begin(9600);
+
+  Serial.println("###################");
+  Serial.println("## version 0.9.1: ");
+  Serial.println("## date: 17/02/2021: ");
+  Serial.println("###################");
+
 
   // interrupteur sur la carte
   pinMode(plus, INPUT_PULLUP);
@@ -562,13 +569,13 @@ bool transition07() {
   return (etat == INITIALISATION && resetOffsetIter > 3 && !isCtrlAlive);
 }
 bool transition12() {
-  return (etat == ATTENTE && valeurCapteur > alpha && isCtrlAlive);
+  return (etat == ATTENTE && valeurCapteur > alpha && vitesseMoyenne > 1.0 && isCtrlAlive);
 }
 bool transition15() {
   return (etat == ATTENTE && valeurCapteur < gamma || chronoFrein.elapsed() > t1 && isCtrlAlive);
 }
 bool transition23() {
-  return (etat == ROULE && (valeurCapteur < 0.5 || chronoFrein.elapsed() > t1) /*&& vitesseMoyenne > 0 &*/& isCtrlAlive);
+  return (etat == ROULE && (valeurCapteur < 0.5 || chronoFrein.elapsed() > t1) && vitesseMoyenne > 0 && isCtrlAlive);
 }
 bool transition32() {
   return (etat == STATU_QUO && valeurCapteur > alpha && !chronoFrein.isRunning() && isCtrlAlive);
@@ -583,7 +590,7 @@ bool transition45() {
   return (etat == DECCELERATION && valeurCapteur < gamma || chronoFrein.elapsed() > t3 && isCtrlAlive);
 }
 bool transition52() {
-  return (etat == FREINAGE && valeurCapteur > alpha && !chronoFrein.isRunning() && isCtrlAlive && !motorBrakeMode);
+  return (etat == FREINAGE && (valeurCapteur > 2 * alpha || (valeurCapteur > alpha && vitesseMoyenne < 1.0 )) && !chronoFrein.isRunning() && isCtrlAlive && !motorBrakeMode);
 }
 bool transition51() {
   return (etat == FREINAGE && !chronoFrein.isRunning() && vitesseMoyenne < 1.0  && valeurCapteur >= 0.0 && valeurCapteur < alpha && isCtrlAlive  && !motorBrakeMode);
@@ -768,7 +775,6 @@ void flowingOrNot() {
       flowingChrono.restart();
       flowingChrono.stop();
       flowingState = 2;
-      debugMessage();
     }
     if (isFlowing == 0) {
       if (etat == 2 || etat == 3) {
@@ -874,12 +880,12 @@ void debugMessage()
 
 void printCsv()
 {
-  
-  if (!csvIter) {
-  //  debugMessage();
 
-    // Serial.print("vitesse,");
+  if (!csvIter) {
+    //  debugMessage();
+
     Serial.print("Iterateur,");
+    Serial.print("vitesse,");
     Serial.print("sortie Moteur,");
     Serial.print("Moteur state ,");
     Serial.print("Etat,");
@@ -888,55 +894,60 @@ void printCsv()
     Serial.print("flowingChrono,");
     Serial.print("stoppedChrono,");
     Serial.print("Ampere");
-    //   Serial.print("Tension,");
+    Serial.print("Tension,");
     // Serial.print("Puissance,");
     Serial.print("Wattmetre state ,");
     Serial.print("Kp,");
-    //  Serial.print("Ki,");
-    //  Serial.print("Kd,");
+    Serial.print("Ki,");
+    Serial.print("Kd,");
 
     Serial.print("Capteur,");
-    Serial.print("rCapteur,");
- /*   Serial.print("Timestamp,Vitesse capteur");
-    Serial.print("Vitesse capteur");
-    Serial.print("Accel capteur");
+    /*
+      Serial.print("rCapteur,");
+        Serial.print("Timestamp,Vitesse capteur");
+        Serial.print("Vitesse capteur");
+        Serial.print("Accel capteur");
     */
-    
+
   }
   else {
 
-    Serial.print(vitesseMoyenne);  Serial.print(",");
+    Serial.print(digitalRead(powerPin));  Serial.print(",");
+    Serial.print(isCtrlAlive);  Serial.print(",");
     Serial.print(csvIter);  Serial.print(",");
+    Serial.print(vitesseMoyenne);  Serial.print(",");
     Serial.print(sortieMoteur);  Serial.print(",");
     Serial.print(moteur.getMoteurState());  Serial.print(",");
     Serial.print(etat);  Serial.print(",");
     Serial.print(flowingState); Serial.print(",");
     Serial.print(isFlowing);  Serial.print(",");
     Serial.print(flowingChrono.elapsed());  Serial.print(",");
-    Serial.print(stoppedChrono.elapsed());  Serial.print(", ");
-  
-  
-
-  Serial.print(wattmetre.getCurrent());  Serial.print(",");
-    // Serial.print(wattmetre.getTension());  Serial.print(",");
+    Serial.print(stoppedChrono.elapsed());  Serial.print(",");
+    Serial.print(wattmetre.getCurrent());  Serial.print(",");
+    Serial.print(wattmetre.getTension());  Serial.print(",");
     // Serial.print(wattmetre.getPower());  Serial.print(",");
     Serial.print(wattmetre.getState());  Serial.print(",");
     Serial.print(myPID.GetKp());  Serial.print(",");
-    // Serial.print(myPID.GetKi());  Serial.print(",");
-    // Serial.print(myPID.GetKd());  Serial.print(",");
-
-
+    Serial.print(myPID.GetKi());  Serial.print(",");
+    Serial.print(myPID.GetKd());  Serial.print(",");
     Serial.print(valeurCapteur);  Serial.print(",");//Serial.print(capteur.getRaw());Serial.print(",");Serial.print(capteur.getReadIndex());Serial.print(",");
-    Serial.print(rCapteur.value);              Serial.print(",");
-    Serial.print(rCapteur.timestamp);          Serial.print(",");
-    Serial.print(dCapteur.value.speed);        Serial.print(",");
-    Serial.print(dCapteur.value.acceleration);
+    /*
+      Serial.print(rCapteur.value);              Serial.print(",");
+      Serial.print(rCapteur.timestamp);          Serial.print(",");
+      Serial.print(dCapteur.value.speed);        Serial.print(",");
+      Serial.print(dCapteur.value.acceleration);
+    */
   }
-    Serial.println();
+  Serial.println();
 
   csvIter++;
 
 
+}
+
+void sendPythonIter() {
+  envoi(csvIter);
+  envoi(sortieMoteur);
 }
 
 void debugTransition() {
