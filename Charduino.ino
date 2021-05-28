@@ -14,8 +14,8 @@
 /////////////////////////////////////////////////
 
 bool debugPython = 0;
-bool debug = 0;
-bool debugCsv =  1;
+bool debug = 1;
+bool debugCsv=  0;
 bool debugMotor = 0;
 bool debugFrein = 0;
 bool debugCapteur = 0;
@@ -27,8 +27,8 @@ int csvIter = 0;
 /////////////// capteur force ///////////////////
 /////////////////////////////////////////////////
 
-const int HX711_dout = 8; //mcu > HX711 dout pin
-const int HX711_sck = 7; //mcu > HX711 sck pin
+const int HX711_dout = 7 ; //mcu > HX711 dout pin
+const int HX711_sck = 8; //mcu > HX711 sck pin
 double capteur_offset = 841.86;
 
 StrengthSensor capteur(HX711_dout, HX711_sck, capteur_offset);
@@ -89,7 +89,7 @@ double K2[3] = {1, 2, 0};
 
 double sortieMoteur;    //output
 //double valeurCapteur;   //input (valeurCapteur_ mais = 0 si < à un seuil
-double consigneCapteur = 0; //setpoint
+double consigneCapteur = -2.0; //setpoint
 float pwmMin = 100, pwmMax = 240;
 Chrono resetPID;
 
@@ -133,7 +133,7 @@ float test2 = 100;
 ///////////////// LED  //////////////////////////
 /////////////////////////////////////////////////
 
-float maxTraction = 10.0;
+float maxTraction = 20.0;
 float seuilTractionNulle = 0.3;
 
 RemorqueLed led = RemorqueLed(maxTraction, seuilTractionNulle, pwmMin, pwmMax);
@@ -173,7 +173,7 @@ int etat = INITIALISATION;
 
 
 float alpha = 2;  //seuil au dessus duquel le PID se calcule et se lance
-float beta = -4.0;  //seuil en deça duquel on passe sur déccélération (pwm=0, pid manual)
+float beta = -6.0;  //seuil en deça duquel on passe sur déccélération (pwm=0, pid manual)
 float gamma = -15.0; // seuil en deça duquel on passe sur du freinage
 
 
@@ -242,7 +242,7 @@ void setup()
   led.ledWelcome();
 
   //capteur
-  EEPROM.get(eeprom, capteur_offset);
+  //EEPROM.get(eeprom, capteur_offset);
   Serial.print("## offset: "); Serial.println(capteur_offset);
   capteur.setOffset(capteur_offset);
   capteur.setSamplesInUse(8); //16 le défaut
@@ -303,7 +303,9 @@ void loop()
   if (etat == INITIALISATION) {
     //Serial.println("ah les filles ah les filles");
     //switchCtrl(false);
-    led.ledState(etat);
+    //led.ledState(etat);
+        led.ledPrint(valeurCapteur, sortieMoteur);
+
     moteur.setMoteurState(STOPPED);
     capteur.setThresholdSensor(0.5);
     switchCtrl(powerCtrl);
@@ -848,7 +850,7 @@ void debugMessage()
   // sprintf(data, "Acc:\t %d - Frein:\t %d - Dec:\t %d - Pieton:\t %d - Stop:\t %d - Frein levier: \t %d - t1Overflow: \t %d  \t - vitesse: \t  ",
   //         accelerationFlag, freinageFlag, deccelerationFlag, pietonFlag, stopFlag, freinLaposteFlag, timer1Overflow);
   // Serial.print(data);
-  // Serial.print(" vitesse :");  Serial.print(vitesseMoyenne);  Serial.print("\t");
+  Serial.print(" vitesse :");  Serial.print(vitesseMoyenne);  Serial.print("\t");
   Serial.print("sortie Moteur :");  Serial.print(sortieMoteur);  Serial.print("\t");
   Serial.print("Moteur state :");  Serial.print(moteur.getMoteurState());  Serial.print("\t");
   Serial.print("Etat :");  Serial.print(etat);  Serial.print("\t");
@@ -858,20 +860,22 @@ void debugMessage()
   Serial.print("isFlowing: "); Serial.print(isFlowing);  Serial.print(" : ");  Serial.print(flowingChrono.elapsed());  Serial.print("\t");
   Serial.print("stoppedChrono :"); Serial.print(stoppedChrono.elapsed());  Serial.print("\t ");
   Serial.print("Ampere "); Serial.print(wattmetre.getCurrent());  Serial.print("A\t");
-  //M   Serial.print(wattmetre.getTension());  Serial.print("V\t");
+  Serial.print("Tension: ");Serial.print(wattmetre.getTension());  Serial.print("V\t");
   // Serial.print(wattmetre.getPower());  Serial.print("W\t");
   Serial.print("Wattmetre state "); Serial.print(wattmetre.getState());  Serial.print("\t");
   //  Serial.print("Kd: ");Serial.print(Kd);  Serial.print("\t");
   Serial.print("Kp: "); Serial.print(myPID.GetKp());  Serial.print("\t");
   //  Serial.print("Ki: ");Serial.print(myPID.GetKi());  Serial.print("\t");
   //  Serial.print("Kd: ");Serial.print(myPID.GetKd());  Serial.print("\t");
+  Serial.print("Brake: "); Serial.print(digitalRead(motorBrakePin));  Serial.print("\t");
+  
 
   Serial.print("Capteur :");  Serial.print(valeurCapteur);  Serial.print("\t");//Serial.print(capteur.getRaw());Serial.print("\t");Serial.print(capteur.getReadIndex());Serial.print("\t");
-  Serial.print("rCapteur: "); Serial.print(rCapteur.value);              Serial.print("\t");
-  Serial.print("Timestamp: "); Serial.print(rCapteur.timestamp);          Serial.print("\t");
+  //Serial.print("rCapteur: "); Serial.print(rCapteur.value);              Serial.print("\t");
+  //Serial.print("Timestamp: "); Serial.print(rCapteur.timestamp);          Serial.print("\t");
   // Serial.print("Pos: ");Serial.print(dCapteur.value.position);     Serial.print("\t");
-  Serial.print("Dérivée 1: "); Serial.print(dCapteur.value.speed);        Serial.print("\t");
-  Serial.print("Dérivée 2: "); Serial.print(dCapteur.value.acceleration);
+  //Serial.print("Dérivée 1: "); Serial.print(dCapteur.value.speed);        Serial.print("\t");
+  //Serial.print("Dérivée 2: "); Serial.print(dCapteur.value.acceleration);
 
 
   Serial.println();

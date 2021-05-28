@@ -1,0 +1,42 @@
+*Pick And Place List
+*Company=
+*Author=
+*eMail=
+*
+*Project=Charduino
+*Date=11:06:15
+*CreatedBy=Fritzing 0.9.4.2019-12-01.CD-498
+*
+*
+*Coordinates in mm, always center of component
+*Origin 0/0=Lower left corner of PCB
+*Rotation in degree (0-360, math. pos.)
+*
+*No;Value;Package;X;Y;Rotation;Side;Name
+1;;THT;30.9501;-51.9443;-90;Bottom;Contrôleur activation
+2;;;77.5943;-66.0557;180;Bottom;HX711
+3;;THT;23.3301;-11.3043;-90;Bottom;Batterie
+4;;THT;88.1001;-45.5943;0;Bottom;Frein moteur CTRL
+5;5V;TO-263;21.665;-41.0713;0;Bottom;U1
+6;;THT;93.1801;-63.3743;0;Bottom;Capteur de force
+7;2.2k;THT;47.4601;-59.5643;90;Bottom;R6
+8;0.1mF;100 mil [THT, electrolytic];36.0301;-24.0043;180;Bottom;Capa alim Vout
+9;;THT;42.3801;-25.2743;0;Bottom;Wattmètre
+10;2.2k;THT;72.8601;-46.8643;0;Bottom;R3
+11;;THT;42.3801;-35.4343;0;Bottom;Panneau contrôle
+12;10µ;100 mil [THT, electrolytic];23.3301;-21.4643;180;Bottom;Capa alim Vin
+13;;THT;70.3201;-30.3543;0;Bottom;Interrupteurs
+14;;;73.7306;-54.4205;0;Bottom;Via1
+15;;300 mil [THT];33.5155;-34.1643;90;Bottom;D1
+16;12V;THT;33.4901;-60.8343;-90;Bottom;GV5-1
+17;;THT;42.3801;-44.3243;0;Bottom;Hall
+18;;THT;72.8601;-44.3243;90;Bottom;Diode
+19;;;57.6201;-34.1559;180;Bottom;Charduino
+20;;THT;47.4601;-8.76426;-90;Bottom;GND interrupteurs
+21;;TO92 [THT];82.9312;-47.0548;90;Bottom;NPN
+22;22µF;100 mil [THT, electrolytic];83.0201;-35.4343;-90;Bottom;C1
+23;;THT;88.1001;-51.9443;-90;Bottom;PWM gachette
+24;2.2k;THT;72.8601;-51.9443;0;Bottom;R4
+25;330µH;400 mil [THT];24.6001;-44.3243;0;Bottom;L2
+26;5V;to-220-alt;23.9416;-31.4551;0;Bottom;IC1
+27;2.2k;THT;72.8601;-36.7043;0;Bottom;R1
