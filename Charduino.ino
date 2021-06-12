@@ -9,19 +9,29 @@
 #include "StrengthSensor.h"
 
 
+/*
+ * Paramètres sur lesquels influer:
+ * 
+ *    
+ * 
+ * 
+ * 
+ */
+
+
 /////////////////////////////////////////////////
 /////////////// Debug ///////////////////////////
 /////////////////////////////////////////////////
 
-bool debugPython = 0;
-bool debug = 1;
-bool debugCsv=  0;
-bool debugMotor = 0;
-bool debugFrein = 0;
-bool debugCapteur = 0;
-bool debugOther = 0;
-bool old = 0;
-int csvIter = 0;
+bool debugPython = 0;     // pour envoyer les données au format attendu par le script python
+bool debug = 1;           // pour envoyer les données de debug au format texte dans le moniteur série
+bool debugCsv=  0;        // pour envoyer les données de debug au format csv dans le moniteur série
+bool debugMotor = 0;      // si aucun moteur n'est branché, pour le simuler
+bool debugFrein = 0;      // si aucun interrupteur n'est branché, sur le frein à inertie. Inutilisé actuellement
+bool debugCapteur = 0;    // si aucun capteur de force n'est branché, pour le simuler
+bool debugOther = 0;      // utilisé à des fins de tests.
+bool old = 0;             // pour assurer la compatibilité avec une ancienne version de carte électronique. A garder à 0.
+int csvIter = 0;          // compteur d'itération pour l'affichage csv.
 
 /////////////////////////////////////////////////
 /////////////// capteur force ///////////////////
@@ -33,14 +43,11 @@ double capteur_offset = 841.86;
 
 StrengthSensor capteur(HX711_dout, HX711_sck, capteur_offset);
 
+
+// pour calculer la dérivée du capteur de force. Inutilisé
 DifferentialFilter<double, unsigned long> diffCapteur;
-
-// need to specify the value and timestamp data type
 Reading<double, unsigned long> rCapteur;
-
-// output of a differential filter is a `Reading` with the value type of `Differential`
 Reading<Differential<double>, unsigned long> dCapteur;
-
 
 
 double valeurCapteur;
@@ -48,7 +55,7 @@ bool newDataReady = 0;
 bool capteurInitialise = 0;
 Chrono resetOffsetChrono;
 int resetOffsetIter;
-MovingAverageFilter<double, double> movingOffset(16);
+MovingAverageFilter<double, double> movingOffset(16); // moyenne lissée sur 16 valeurs
 double newOffset, rawValue;
 
 
@@ -56,12 +63,23 @@ double newOffset, rawValue;
 /////////////////// EEPROM  /////////////////////
 /////////////////////////////////////////////////
 
+// on utilise la mémoire eeprom pour stocker la valeur à considérer comme 0 pour le capteur de force.
+
 int eeprom = 0;
 
 /////////////////////////////////////////////////
 /////////////// Frein à inertie /////////////////
 /////////////////////////////////////////////////
 
+/*
+ * Inutilisée
+ *
+ * Pour ajouter de la sécurité, l'idée est de mettre un contacteur au niveau du frein à inertie.
+ * Quand ça s'ouvre, la remorque commence à aller plus vite que le vélo.
+ * L'information est plus basique que celle du capteur de force mais permet d'ajouter une redondance d'informations.
+ * Il n'a pas été trouvé encore de position correcte ou de contacteur fiable et robuste.
+ * Idée en repos, mais importante à mettre en oeuvre par la suite.
+ */
 
 const int frein = debugFrein ? 4 : 5;
 Chrono chronoFrein;
@@ -77,29 +95,75 @@ int t3 = 1500;
 /////////////// Moteur //////////////////////////
 /////////////////////////////////////////////////
 
+/*
+ * Objet permettant de piloter le moteur au travers du signal de gachette et de frein
+ */
+
 MoteurEBike moteur = MoteurEBike();
 
 /////////////////////////////////////////////////
 ///////////////// PID ///////////////////////////
 /////////////////////////////////////////////////
 
-double Kp = 2, Ki = 13, Kd = 0.1;
-double K1[3] = {1, 3, 0};
-double K2[3] = {1, 2, 0};
+/*
+ * Pour lier l'information du capteur de force au signal PWM envoyé dans la gachette, on utilise un PID.
+ * https://playground.arduino.cc/Code/PIDLibrary/
+ */
+
+// Paramètres à changer:
+
+double K1[3] = {1, 4, 0.1}; // boost, mode 0 pour les led
+double K2[3] = {1, 2, 0}; //marche, mode 1 pour les led
+float betaTab[2]={-6,-3};
+float gammaTab[2]={-10,-6};
+double consigneCapteurTab[2]={-4.0,0.0};
 
 double sortieMoteur;    //output
-//double valeurCapteur;   //input (valeurCapteur_ mais = 0 si < à un seuil
-double consigneCapteur = -2.0; //setpoint
-float pwmMin = 100, pwmMax = 240;
-Chrono resetPID;
+double consigneCapteur = consigneCapteurTab[1]; //setpoint, valeur visée par le PID comme valeur de capteur.
+float pwmMin = 110, pwmMax = 255; // les valeurs minimales et maximales pour le PWM de la gachette.
+                                  //110 a été trouvée expérimentalement avec une batterie 48V et un contrôleur Ozo. En deça la roue ne tourne pas.
+                                  // ces valeurs sont à tester et corriger en cas de changement de batterie ou contrôleur.
 
-PID myPID(&valeurCapteur, &sortieMoteur, &consigneCapteur, K2[0], K2[1], K2[2], P_ON_M, REVERSE);
+PID myPID(&valeurCapteur, &sortieMoteur, &consigneCapteur, K2[0], K2[1], K2[2], P_ON_E, REVERSE);
+    // Entrée: ValeurCapteur
+    // Valeur asservie: SortieMoteur, qui est un PWM allant de pwmMin à pwmMax
+    // ConsigneCapteur: Valeur visée pour ValeurCapteur
+    // Kp,Ki,Kd, les paramètres dont dépendent l'asservissement du pwm
+    // P_ON_E, Proportionnal on Error
+    // REVERSE, augmenter la valeur asservie, diminuera l'entrée.
 
+/////////////////////////////////////////////////
+//////////////// Etats //////////////////////////
+/////////////////////////////////////////////////
+
+enum etats_enum {INITIALISATION,  //0
+                 ATTENTE,         //1
+                 ROULE,           //2
+                 STATU_QUO,       //3
+                 DECCELERATION,   //4
+                 FREINAGE,        //5
+                 MARCHE,          //6
+                 RESET_CAPTEUR    //7
+                };
+
+int etat = INITIALISATION;
+
+// Ancre paramètre 2
+
+float alpha = 1;  //seuil au dessus duquel le PID se calcule et se lance
+float beta = betaTab[1] ; //seuil en deça duquel on passe sur déccélération (pwm=0, pid manual)
+float gamma = gammaTab[1]; // seuil en deça duquel on passe sur du freinage
 
 
 /////////////////////////////////////////////////
-//////////// Vitesse moyenne ///////////////////
+//////////// Vitesse moyenne ////////////////////
 /////////////////////////////////////////////////
+
+/*
+ * Stockage de la vitesse du moteur.
+ * Vitesse lue grâce aux capteurs à effet hall du moteur
+ * En cas de défaillance de cette information, le système n'est plus utilisable
+ */
 
 MovingAverageFilter<double, double> vitesseFiltree(4);
 double vitesseMoyenne;
@@ -121,13 +185,9 @@ bool haltFlag = 0;
 ///////////// Pin controleur ////////////////////
 /////////////////////////////////////////////////
 
-int ctrlAlive = 12;
-int ctrlSwitch = 13;
+int ctrlAlive = 12;     // sur cette pin arrive le 5V de la gachette. Cette information nous renseigne sur l'état du contrôleur.
+int ctrlSwitch = 13;    // pin utilisée pour allumer le relais qui activait le contrôleur. Inutilisée depuis que le relais est activé en direct par un interrupteur. A nettoyer
 bool isCtrlAlive = debugMotor ? 1 : 0;
-
-
-float test = 0;
-float test2 = 100;
 
 /////////////////////////////////////////////////
 ///////////////// LED  //////////////////////////
@@ -155,26 +215,6 @@ Chrono flowingChrono; // chrono pour s'avoir depuis quand on envoie un pwm
 Chrono stoppedChrono; // chrono pour s'avoir depuis quand on a détecté un arrêt.
 int flowingState;
 
-/////////////////////////////////////////////////
-//////////////// Etats //////////////////////////
-/////////////////////////////////////////////////
-
-enum etats_enum {INITIALISATION,  //0
-                 ATTENTE,         //1
-                 ROULE,           //2
-                 STATU_QUO,       //3
-                 DECCELERATION,   //4
-                 FREINAGE,        //5
-                 MARCHE,          //6
-                 RESET_CAPTEUR    //7
-                };
-
-int etat = INITIALISATION;
-
-
-float alpha = 2;  //seuil au dessus duquel le PID se calcule et se lance
-float beta = -6.0;  //seuil en deça duquel on passe sur déccélération (pwm=0, pid manual)
-float gamma = -15.0; // seuil en deça duquel on passe sur du freinage
 
 
 int powerPin = old ? 0 : A3; // pin pour allumer le controleur            Jaune
@@ -187,8 +227,9 @@ int debounceTime = 100;
 
 
 bool powerCtrl = old ? 1 : 0;
-bool walkMode = 0;
+bool walkMode = 1;
 bool motorBrakeMode = 0;
+
 
 
 void setup()
@@ -197,8 +238,9 @@ void setup()
   Serial.begin(9600);
 
   Serial.println("###################");
-  Serial.println("## version 0.9.1: ");
-  Serial.println("## date: 17/02/2021: ");
+  Serial.println("## version 0.9.2: ");
+  Serial.println("## date: 12/06/2021: ");
+  Serial.println("## Concarneau ");
   Serial.println("###################");
 
 
@@ -240,6 +282,7 @@ void setup()
   stoppedChrono.stop();
 
   led.ledWelcome();
+  led.setMode(walkMode);  
 
   //capteur
   //EEPROM.get(eeprom, capteur_offset);
@@ -301,10 +344,7 @@ void loop()
   ////////////////////////////////////////////////////:
 
   if (etat == INITIALISATION) {
-    //Serial.println("ah les filles ah les filles");
-    //switchCtrl(false);
-    //led.ledState(etat);
-        led.ledPrint(valeurCapteur, sortieMoteur);
+    led.ledPrint(valeurCapteur, sortieMoteur);
 
     moteur.setMoteurState(STOPPED);
     capteur.setThresholdSensor(0.5);
@@ -709,10 +749,18 @@ void motorBrakePinInterrupt() {
   }
 }
 void walkPinInterrupt() {
-  if (digitalRead(walkPin))
+  if (digitalRead(walkPin)){
     walkMode = 1;
-  else
+    consigneCapteur = consigneCapteurTab[1];
+    beta = betaTab[1];
+    gamma = gammaTab[1];
+  }
+  else{
     walkMode = 0;
+    beta = betaTab[0];
+    gamma = gammaTab[0];
+    consigneCapteur = consigneCapteurTab[0];
+  }
 
   setPIDMode(walkMode);
 }
@@ -725,9 +773,11 @@ void walkPinInterrupt() {
 void setPIDMode(bool walkOrNot) {
   if (walkOrNot) {
     myPID.SetTunings(K2[0], K2[1], K2[2]);
+    led.setMode(1);
   }
   else {
     myPID.SetTunings(K1[0], K1[1], K1[2]);
+    led.setMode(0);
   }
 }
 
@@ -858,17 +908,19 @@ void debugMessage()
   //Serial.print("chrono :");  Serial.print(chronoFrein.isRunning());  Serial.print(" : ");  Serial.print(chronoFrein.elapsed());  Serial.print("\t");
   Serial.print("flowing: "); Serial.print(flowingState); Serial.print("\t");
   Serial.print("isFlowing: "); Serial.print(isFlowing);  Serial.print(" : ");  Serial.print(flowingChrono.elapsed());  Serial.print("\t");
-  Serial.print("stoppedChrono :"); Serial.print(stoppedChrono.elapsed());  Serial.print("\t ");
+ // Serial.print("stoppedChrono :"); Serial.print(stoppedChrono.elapsed());  Serial.print("\t ");
   Serial.print("Ampere "); Serial.print(wattmetre.getCurrent());  Serial.print("A\t");
   Serial.print("Tension: ");Serial.print(wattmetre.getTension());  Serial.print("V\t");
   // Serial.print(wattmetre.getPower());  Serial.print("W\t");
   Serial.print("Wattmetre state "); Serial.print(wattmetre.getState());  Serial.print("\t");
   //  Serial.print("Kd: ");Serial.print(Kd);  Serial.print("\t");
   Serial.print("Kp: "); Serial.print(myPID.GetKp());  Serial.print("\t");
-  //  Serial.print("Ki: ");Serial.print(myPID.GetKi());  Serial.print("\t");
+    Serial.print("Ki: ");Serial.print(myPID.GetKi());  Serial.print("\t");
   //  Serial.print("Kd: ");Serial.print(myPID.GetKd());  Serial.print("\t");
   Serial.print("Brake: "); Serial.print(digitalRead(motorBrakePin));  Serial.print("\t");
-  
+  Serial.print("Walk: "); Serial.print(walkMode);  Serial.print("\t");
+  Serial.print("gamma: "); Serial.print(gamma);  Serial.print("\t");
+
 
   Serial.print("Capteur :");  Serial.print(valeurCapteur);  Serial.print("\t");//Serial.print(capteur.getRaw());Serial.print("\t");Serial.print(capteur.getReadIndex());Serial.print("\t");
   //Serial.print("rCapteur: "); Serial.print(rCapteur.value);              Serial.print("\t");

@@ -1,11 +1,23 @@
 Arduino pour contrôler la remorque en fonction du capteur de traction
 
 
+Bibliothèques requises:
+
+#include <EEPROM.h>
+#include <Chrono.h>
+#include <SoftFilters.h>
+#include <PID_v1.h>
+#include <Adafruit_NeoPixel.h>
+#include <HX711_ADC.h>
+
+
+
+
 2020 11 09
 Jusqu'à présent l'arduino était alimenté par le contrôleur via le 5V de la gachette.
 Lors des essais il a été constaté qu'il redémarrait quand le moteur tirait trop de jus.
 On va passer sur une alimentation directement par la batterie, incorporation d'un step-down pour passer de 36V à 5V et avoir ainsi une alim stabilisé.
 
 Le 5V de la gachette sera tout de même utilisé pour savoir si le contrôleur est allumé ou pas, utilisation d'une résistance pull-down sur une pin.
-Possibilité d'utiliser un transistor pour activer le contrôleur quand l'arduino est prêt et que la barre de traction est prête. 
+Possibilité d'utiliser un transistor pour activer le contrôleur quand l'arduino est prêt et que la barre de traction est prête.
 Ainsi quand on verra que le contrôleur ne répond pas, on pourra l'éteindre et le rallumer.
