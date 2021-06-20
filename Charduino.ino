@@ -112,10 +112,10 @@ MoteurEBike moteur = MoteurEBike();
 
 // Paramètres à changer:
 
-double K1[3] = {1, 4, 0.1}; // boost, mode 0 pour les led
+double K1[3] = {1, 2, 0}; // boost, mode 0 pour les led
 double K2[3] = {1, 2, 0}; //marche, mode 1 pour les led
-float betaTab[2]={-6,-3};
-float gammaTab[2]={-10,-6};
+float betaTab[2]={-3,-3};
+float gammaTab[2]={-6,-6};
 double consigneCapteurTab[2]={-4.0,0.0};
 
 double sortieMoteur;    //output
@@ -754,12 +754,16 @@ void walkPinInterrupt() {
     consigneCapteur = consigneCapteurTab[1];
     beta = betaTab[1];
     gamma = gammaTab[1];
+    myPID.SetOutputLimits(pwmMin, 180);
+
   }
   else{
     walkMode = 0;
     beta = betaTab[0];
     gamma = gammaTab[0];
-    consigneCapteur = consigneCapteurTab[0];
+    consigneCapteur = consigneCapteurTab[0]; 
+    myPID.SetOutputLimits(pwmMin, pwmMax);
+
   }
 
   setPIDMode(walkMode);
