@@ -238,9 +238,9 @@ void setup()
   Serial.begin(9600);
 
   Serial.println("###################");
-  Serial.println("## version 0.9.2: ");
-  Serial.println("## date: 12/06/2021: ");
-  Serial.println("## Concarneau ");
+  Serial.println("## version 0.9.4: ");
+  Serial.println("## date: 20/06/2021: ");
+  Serial.println("## MAAD93 ");
   Serial.println("###################");
 
 
@@ -924,6 +924,7 @@ void debugMessage()
   Serial.print("Brake: "); Serial.print(digitalRead(motorBrakePin));  Serial.print("\t");
   Serial.print("Walk: "); Serial.print(walkMode);  Serial.print("\t");
   Serial.print("gamma: "); Serial.print(gamma);  Serial.print("\t");
+  Serial.print("Mode: "); Serial.print(analogRead(walkPin));  Serial.print("\t");
 
 
   Serial.print("Capteur :");  Serial.print(valeurCapteur);  Serial.print("\t");//Serial.print(capteur.getRaw());Serial.print("\t");Serial.print(capteur.getReadIndex());Serial.print("\t");
