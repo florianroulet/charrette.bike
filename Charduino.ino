@@ -112,11 +112,11 @@ MoteurEBike moteur = MoteurEBike();
 
 // Paramètres à changer:
 
-double K1[3] = {1, 2, 0}; // boost, mode 0 pour les led
-double K2[3] = {1, 2, 0}; //marche, mode 1 pour les led
-float betaTab[2]={-3,-3};
-float gammaTab[2]={-6,-6};
-double consigneCapteurTab[2]={-4.0,0.0};
+double K1[3] = {1, 2, 0.1}; // boost, mode 0 pour les led
+double K2[3] = {1, 4, 0.1}; //marche, mode 1 pour les led
+float betaTab[2]={-3,-6};
+float gammaTab[2]={-6,-10};
+double consigneCapteurTab[2]={0.0,-2.0};
 
 double sortieMoteur;    //output
 double consigneCapteur = consigneCapteurTab[1]; //setpoint, valeur visée par le PID comme valeur de capteur.
@@ -124,7 +124,7 @@ float pwmMin = 110, pwmMax = 255; // les valeurs minimales et maximales pour le 
                                   //110 a été trouvée expérimentalement avec une batterie 48V et un contrôleur Ozo. En deça la roue ne tourne pas.
                                   // ces valeurs sont à tester et corriger en cas de changement de batterie ou contrôleur.
 
-PID myPID(&valeurCapteur, &sortieMoteur, &consigneCapteur, K2[0], K2[1], K2[2], P_ON_E, REVERSE);
+PID myPID(&valeurCapteur, &sortieMoteur, &consigneCapteur, K1[0], K1[1], K1[2], P_ON_E, REVERSE);
     // Entrée: ValeurCapteur
     // Valeur asservie: SortieMoteur, qui est un PWM allant de pwmMin à pwmMax
     // ConsigneCapteur: Valeur visée pour ValeurCapteur
@@ -151,8 +151,8 @@ int etat = INITIALISATION;
 // Ancre paramètre 2
 
 float alpha = 1;  //seuil au dessus duquel le PID se calcule et se lance
-float beta = betaTab[1] ; //seuil en deça duquel on passe sur déccélération (pwm=0, pid manual)
-float gamma = gammaTab[1]; // seuil en deça duquel on passe sur du freinage
+float beta = betaTab[0] ; //seuil en deça duquel on passe sur déccélération (pwm=0, pid manual)
+float gamma = gammaTab[0]; // seuil en deça duquel on passe sur du freinage
 
 
 /////////////////////////////////////////////////
@@ -301,7 +301,7 @@ void setup()
   EEPROM.get(eeprom, capteur_offset);
   Serial.print("## offset: "); Serial.println(capteur_offset);
   capteur.setOffset(capteur_offset);
-  capteur.setSamplesInUse(8); //16 le défaut
+  capteur.setSamplesInUse(2); //16 le défaut
 
   pinMode(powerPin, INPUT_PULLUP);
   pinMode(motorBrakePin, INPUT_PULLUP);
@@ -747,7 +747,7 @@ void setMode(int mode){
     consigneCapteur = consigneCapteurTab[1];
     beta = betaTab[1];
     gamma = gammaTab[1];
-    myPID.SetOutputLimits(pwmMin, 180);
+    myPID.SetOutputLimits(pwmMin, pwmMax);
 
   }
   else{
@@ -755,7 +755,7 @@ void setMode(int mode){
     beta = betaTab[0];
     gamma = gammaTab[0];
     consigneCapteur = consigneCapteurTab[0];
-    myPID.SetOutputLimits(pwmMin, pwmMax);
+    myPID.SetOutputLimits(pwmMin, 180);
 
   }
 
