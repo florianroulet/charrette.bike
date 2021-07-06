@@ -298,7 +298,7 @@ void setup()
 //  led.setMode(walkMode);
 
   //capteur
-  //EEPROM.get(eeprom, capteur_offset);
+  EEPROM.get(eeprom, capteur_offset);
   Serial.print("## offset: "); Serial.println(capteur_offset);
   capteur.setOffset(capteur_offset);
   capteur.setSamplesInUse(8); //16 le défaut
