@@ -11,11 +11,11 @@
 
 /*
  * Paramètres sur lesquels influer:
- * 
- *    
- * 
- * 
- * 
+ *
+ *
+ *
+ *
+ *
  */
 
 
@@ -192,12 +192,14 @@ bool isCtrlAlive = debugMotor ? 1 : 0;
 /////////////////////////////////////////////////
 ///////////////// LED  //////////////////////////
 /////////////////////////////////////////////////
-
+/*
 float maxTraction = 20.0;
 float seuilTractionNulle = 0.3;
 
 RemorqueLed led = RemorqueLed(maxTraction, seuilTractionNulle, pwmMin, pwmMax);
+*/
 
+int ledPin = 9;
 
 /////////////////////////////////////////////////
 ///////////////// Wattmetre /////////////////////
@@ -238,11 +240,20 @@ void setup()
   Serial.begin(9600);
 
   Serial.println("###################");
-  Serial.println("## version 0.9.4: ");
-  Serial.println("## date: 20/06/2021: ");
-  Serial.println("## MAAD93 ");
+  Serial.println("## version 0.9.5: ");
+  Serial.println("## date: 06/07/2021: ");
+  Serial.println("## Guillaume ");
   Serial.println("###################");
 
+/*
+  On a un nouveau boîtier de contrôle.
+  Le mode est lu en fonction de analogRead sur walkPin.
+    Avec un pont diviseur de tension, on a empiriquement:
+      Mode 1: analogRead = 426 425
+      Mode 2: analogRead = 71 72
+      Mode 0: analogRead = 1023 (éteint)
+
+*/
 
   // interrupteur sur la carte
   pinMode(plus, INPUT_PULLUP);
@@ -281,8 +292,10 @@ void setup()
   stoppedChrono.restart();
   stoppedChrono.stop();
 
-  led.ledWelcome();
-  led.setMode(walkMode);  
+  pinMode(ledPin,OUTPUT);
+
+ // led.ledWelcome();
+//  led.setMode(walkMode);
 
   //capteur
   //EEPROM.get(eeprom, capteur_offset);
@@ -295,7 +308,7 @@ void setup()
   pinMode(walkPin, INPUT_PULLUP);
   attachPCINT(digitalPinToPCINT(powerPin), powerPinInterrupt, CHANGE);
   attachPCINT(digitalPinToPCINT(motorBrakePin), motorBrakePinInterrupt, CHANGE);
-  attachPCINT(digitalPinToPCINT(walkPin), walkPinInterrupt, CHANGE);
+//  attachPCINT(digitalPinToPCINT(walkPin), walkPinInterrupt, CHANGE); // n'a plus raison d'être avec nouveau boîtier
   powerChrono.restart();
   powerChrono.stop();
   motorBrakeChrono.restart();
@@ -329,10 +342,16 @@ void loop()
   }
 
   if (motorBrakeChrono.elapsed() > debounceTime && digitalRead(motorBrakePin) == motorBrakeNewState) {
-    motorBrakeMode = motorBrakeNewState;
+    motorBrakeMode = !motorBrakeNewState;
     motorBrakeChrono.restart();
     motorBrakeChrono.stop();
   }
+
+    if(analogRead(walkPin)>400 && analogRead(walkPin)<500 && walkMode==0)
+      setMode(1);
+    if(analogRead(walkPin)>50 && analogRead(walkPin)<100 && walkMode==1)
+        setMode(0);
+
 
 
 
@@ -344,7 +363,6 @@ void loop()
   ////////////////////////////////////////////////////:
 
   if (etat == INITIALISATION) {
-    led.ledPrint(valeurCapteur, sortieMoteur);
 
     moteur.setMoteurState(STOPPED);
     capteur.setThresholdSensor(0.5);
@@ -372,7 +390,6 @@ void loop()
   else if ( etat == ATTENTE) {
 
     myPID.SetMode(MANUAL);
-    led.ledState(etat);
     moteur.setMoteurState(STOPPED);
     capteur.setThresholdSensor(0.5);
 
@@ -413,7 +430,6 @@ void loop()
       led.ledFail(2);
       }
     */
-    led.ledPrint(valeurCapteur, sortieMoteur);
     capteur.setThresholdSensor(0.0);
     //   flowingOrNot();
 
@@ -433,19 +449,6 @@ void loop()
 
   else if ( etat == STATU_QUO) {
     moteur.setMoteurState(SPINNING);
-
-    led.ledState(etat);
-    /*
-        if(wattmetre.getState()==3)
-          led.ledPrint(valeurCapteur,sortieMoteur);
-        else{
-          led.ledFail(3);
-        }
-    */
-    led.ledPrint(valeurCapteur, sortieMoteur);
-    // myPID.SetMode(MANUAL);
-    // flowingOrNot();
-
 
     myPID.SetMode(AUTOMATIC);
     miseAJourPID();
@@ -468,18 +471,9 @@ void loop()
 
   else if ( etat == DECCELERATION) {
 
-    led.ledState(etat);
     moteur.setMoteurState(STOPPED);
-    //moteur.setMoteurState(SPINNING);
     myPID.SetMode(MANUAL);
     sortieMoteur = pwmMin;
-    // myPID.SetMode(AUTOMATIC);
-    // miseAJourPID();
-
-    //   if(flowingChrono.isRunning()){
-    //      flowingChrono.restart();
-    //      flowingChrono.stop();
-    //    }
 
     if (transition5()) {
       etat = FREINAGE;
@@ -500,7 +494,6 @@ void loop()
 
   else if (etat == FREINAGE) {
 
-    led.ledState(etat);
     myPID.SetMode(MANUAL);
     moteur.setMoteurState(BRAKING);
     sortieMoteur = pwmMin;
@@ -533,15 +526,10 @@ void loop()
     /*
        On attend 500ms puis la valeur actuelle du capteur est stockée et lissée sur 32 valeurs
     */
-    //led.ledState(etat);
     if (resetOffsetIter != 10)
       resetOffsetChrono.restart();
     resetOffsetIter = 10;
     if (resetOffsetChrono.elapsed() > 500) {
-      if (millis() % 500 > 250)
-        led.ledFail(etat);
-      else
-        led.ledFail(etat - 1);
       rawValue = capteur.getRaw();
       movingOffset.push(&rawValue, &newOffset);
     }
@@ -558,8 +546,7 @@ void loop()
 
 
   else {
-    //  Serial.println("Sortie de cas");
-    led.ledFail(OTHER);
+     Serial.println("Sortie de cas");
   }
 
   /*
@@ -598,7 +585,10 @@ void loop()
   }
   moteur.mettreLesGaz(sortieMoteur);
 
-
+  if(millis()%500>250)
+    digitalWrite(ledPin,HIGH);
+  else
+    digitalWrite(ledPin,LOW);
 }
 
 
@@ -748,8 +738,11 @@ void motorBrakePinInterrupt() {
     motorBrakeChrono.restart();
   }
 }
-void walkPinInterrupt() {
-  if (digitalRead(walkPin)){
+
+
+//void walkPinInterrupt() {
+void setMode(int mode){
+  if (mode==1){
     walkMode = 1;
     consigneCapteur = consigneCapteurTab[1];
     beta = betaTab[1];
@@ -761,7 +754,7 @@ void walkPinInterrupt() {
     walkMode = 0;
     beta = betaTab[0];
     gamma = gammaTab[0];
-    consigneCapteur = consigneCapteurTab[0]; 
+    consigneCapteur = consigneCapteurTab[0];
     myPID.SetOutputLimits(pwmMin, pwmMax);
 
   }
@@ -777,11 +770,9 @@ void walkPinInterrupt() {
 void setPIDMode(bool walkOrNot) {
   if (walkOrNot) {
     myPID.SetTunings(K2[0], K2[1], K2[2]);
-    led.setMode(1);
   }
   else {
     myPID.SetTunings(K1[0], K1[1], K1[2]);
-    led.setMode(0);
   }
 }
 
@@ -921,7 +912,7 @@ void debugMessage()
   Serial.print("Kp: "); Serial.print(myPID.GetKp());  Serial.print("\t");
     Serial.print("Ki: ");Serial.print(myPID.GetKi());  Serial.print("\t");
   //  Serial.print("Kd: ");Serial.print(myPID.GetKd());  Serial.print("\t");
-  Serial.print("Brake: "); Serial.print(digitalRead(motorBrakePin));  Serial.print("\t");
+  Serial.print("Brake: "); Serial.print(motorBrakeMode);  Serial.print("\t");
   Serial.print("Walk: "); Serial.print(walkMode);  Serial.print("\t");
   Serial.print("gamma: "); Serial.print(gamma);  Serial.print("\t");
   Serial.print("Mode: "); Serial.print(analogRead(walkPin));  Serial.print("\t");
