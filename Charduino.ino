@@ -240,9 +240,9 @@ void setup()
   Serial.begin(9600);
 
   Serial.println("###################");
-  Serial.println("## version 0.9.5: ");
-  Serial.println("## date: 08/07/2021: ");
-  Serial.println("## Guillaume ");
+  Serial.println("## version 0.9.6: ");
+  Serial.println("## date: 17/07/2021: ");
+  Serial.println("## Remorque boumboum ");
   Serial.println("###################");
 
 /*
@@ -755,7 +755,7 @@ void setMode(int mode){
     beta = betaTab[0];
     gamma = gammaTab[0];
     consigneCapteur = consigneCapteurTab[0];
-    myPID.SetOutputLimits(pwmMin, 180);
+    myPID.SetOutputLimits(pwmMin, 220);
 
   }
 
