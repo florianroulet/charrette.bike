@@ -112,19 +112,19 @@ MoteurEBike moteur = MoteurEBike();
 
 // Paramètres à changer:
 
-double K1[3] = {1, 2, 0}; // boost, mode 0 pour les led
-double K2[3] = {1, 2, 0}; //marche, mode 1 pour les led
-float betaTab[2]={-3,-3};
-float gammaTab[2]={-6,-6};
-double consigneCapteurTab[2]={-4.0,0.0};
+	double K1[3] = {1, 4, 0.1}; // boost, mode 0 pour les led
+	double K2[3] = {1, 2, 0.1}; //marche, mode 1 pour les led
+	float betaTab[2]={-6,-3};
+	float gammaTab[2]={-9,-6};
+	double consigneCapteurTab[2]={-2.0,0.0};
 
-double sortieMoteur;    //output
-double consigneCapteur = consigneCapteurTab[1]; //setpoint, valeur visée par le PID comme valeur de capteur.
-float pwmMin = 110, pwmMax = 255; // les valeurs minimales et maximales pour le PWM de la gachette.
-                                  //110 a été trouvée expérimentalement avec une batterie 48V et un contrôleur Ozo. En deça la roue ne tourne pas.
-                                  // ces valeurs sont à tester et corriger en cas de changement de batterie ou contrôleur.
+	double sortieMoteur;    //output
+	double consigneCapteur = consigneCapteurTab[1]; //setpoint, valeur visée par le PID comme valeur de capteur.
+	float pwmMin = 110, pwmMax = 255; // les valeurs minimales et maximales pour le PWM de la gachette.
+		                          //110 a été trouvée expérimentalement avec une batterie 48V et un contrôleur Ozo. En deça la roue ne tourne pas.
+		                          // ces valeurs sont à tester et corriger en cas de changement de batterie ou contrôleur.
 
-PID myPID(&valeurCapteur, &sortieMoteur, &consigneCapteur, K2[0], K2[1], K2[2], P_ON_E, REVERSE);
+	PID myPID(&valeurCapteur, &sortieMoteur, &consigneCapteur, K1[0], K1[1], K1[2], P_ON_E, REVERSE);
     // Entrée: ValeurCapteur
     // Valeur asservie: SortieMoteur, qui est un PWM allant de pwmMin à pwmMax
     // ConsigneCapteur: Valeur visée pour ValeurCapteur
@@ -238,8 +238,8 @@ void setup()
   Serial.begin(9600);
 
   Serial.println("###################");
-  Serial.println("## version 0.9.4: ");
-  Serial.println("## date: 20/06/2021: ");
+  Serial.println("## version 0.9.5: ");
+  Serial.println("## date: 20/07/2021: ");
   Serial.println("## MAAD93 ");
   Serial.println("###################");
 
@@ -754,7 +754,7 @@ void walkPinInterrupt() {
     consigneCapteur = consigneCapteurTab[1];
     beta = betaTab[1];
     gamma = gammaTab[1];
-    myPID.SetOutputLimits(pwmMin, 180);
+    myPID.SetOutputLimits(pwmMin, 220);
 
   }
   else{
@@ -906,25 +906,30 @@ void debugMessage()
   // Serial.print(data);
   Serial.print(" vitesse :");  Serial.print(vitesseMoyenne);  Serial.print("\t");
   Serial.print("sortie Moteur :");  Serial.print(sortieMoteur);  Serial.print("\t");
-  Serial.print("Moteur state :");  Serial.print(moteur.getMoteurState());  Serial.print("\t");
+//  Serial.print("Moteur state :");  Serial.print(moteur.getMoteurState());  Serial.print("\t");
   Serial.print("Etat :");  Serial.print(etat);  Serial.print("\t");
   //  Serial.print("BRakeMotor pin :");  Serial.print(motorBrakeMode);  Serial.print("\t");  Serial.print(resetOffsetIter);   Serial.print("\t"); //Serial.print(resetOffsetChrono.elapsed());
   //Serial.print("chrono :");  Serial.print(chronoFrein.isRunning());  Serial.print(" : ");  Serial.print(chronoFrein.elapsed());  Serial.print("\t");
-  Serial.print("flowing: "); Serial.print(flowingState); Serial.print("\t");
-  Serial.print("isFlowing: "); Serial.print(isFlowing);  Serial.print(" : ");  Serial.print(flowingChrono.elapsed());  Serial.print("\t");
+//  Serial.print("flowing: "); Serial.print(flowingState); Serial.print("\t");
+//  Serial.print("isFlowing: "); Serial.print(isFlowing);  Serial.print(" : ");  Serial.print(flowingChrono.elapsed());  Serial.print("\t");
  // Serial.print("stoppedChrono :"); Serial.print(stoppedChrono.elapsed());  Serial.print("\t ");
   Serial.print("Ampere "); Serial.print(wattmetre.getCurrent());  Serial.print("A\t");
-  Serial.print("Tension: ");Serial.print(wattmetre.getTension());  Serial.print("V\t");
+//  Serial.print("Tension: ");Serial.print(wattmetre.getTension());  Serial.print("V\t");
   // Serial.print(wattmetre.getPower());  Serial.print("W\t");
-  Serial.print("Wattmetre state "); Serial.print(wattmetre.getState());  Serial.print("\t");
+// Serial.print("Wattmetre state "); Serial.print(wattmetre.getState());  Serial.print("\t");
   //  Serial.print("Kd: ");Serial.print(Kd);  Serial.print("\t");
-  Serial.print("Kp: "); Serial.print(myPID.GetKp());  Serial.print("\t");
+  //  Serial.print("Kp: "); Serial.print(myPID.GetKp());  Serial.print("\t");
     Serial.print("Ki: ");Serial.print(myPID.GetKi());  Serial.print("\t");
   //  Serial.print("Kd: ");Serial.print(myPID.GetKd());  Serial.print("\t");
   Serial.print("Brake: "); Serial.print(digitalRead(motorBrakePin));  Serial.print("\t");
   Serial.print("Walk: "); Serial.print(walkMode);  Serial.print("\t");
   Serial.print("gamma: "); Serial.print(gamma);  Serial.print("\t");
-  Serial.print("Mode: "); Serial.print(analogRead(walkPin));  Serial.print("\t");
+  Serial.print("Mode: ");
+  if(walkMode)
+    Serial.print("lent");
+  else
+    Serial.print("rapide");
+  Serial.print("\t");
 
 
   Serial.print("Capteur :");  Serial.print(valeurCapteur);  Serial.print("\t");//Serial.print(capteur.getRaw());Serial.print("\t");Serial.print(capteur.getReadIndex());Serial.print("\t");
