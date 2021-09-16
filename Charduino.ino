@@ -576,7 +576,7 @@ void loop()
 
   */
 
-  flowingOrNot();
+ //flowingOrNot();
 
 
   if (debugPython) {
@@ -914,7 +914,8 @@ void debugMessage()
 //  Serial.print("isFlowing: "); Serial.print(isFlowing);  Serial.print(" : ");  Serial.print(flowingChrono.elapsed());  Serial.print("\t");
  // Serial.print("stoppedChrono :"); Serial.print(stoppedChrono.elapsed());  Serial.print("\t ");
   Serial.print("Ampere "); Serial.print(wattmetre.getCurrent());  Serial.print("A\t");
-//  Serial.print("Tension: ");Serial.print(wattmetre.getTension());  Serial.print("V\t");
+  Serial.print("ampere raw "); Serial.print(wattmetre.getCurrentRaw());  Serial.print("\t");
+  Serial.print("Tension: ");Serial.print(wattmetre.getTension());  Serial.print("V\t");
   // Serial.print(wattmetre.getPower());  Serial.print("W\t");
 // Serial.print("Wattmetre state "); Serial.print(wattmetre.getState());  Serial.print("\t");
   //  Serial.print("Kd: ");Serial.print(Kd);  Serial.print("\t");
