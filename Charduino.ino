@@ -53,8 +53,8 @@ Reading<Differential<double>, unsigned long> dCapteur;
 double valeurCapteur;
 bool newDataReady = 0;
 bool capteurInitialise = 0;
-Chrono resetOffsetChrono;
-int resetOffsetIter;
+Chrono resetOffsetChrono; // Chrono pour ?
+int resetOffsetIter;			// compteur pour compter le nombre d'aller retour sur l'interrupteur brake
 MovingAverageFilter<double, double> movingOffset(16); // moyenne lissée sur 16 valeurs
 double newOffset, rawValue;
 
@@ -350,6 +350,8 @@ void loop()
     capteur.setThresholdSensor(0.5);
     switchCtrl(powerCtrl);
 
+
+		// Si ça fait plus de 1000ms que le chrono est lancé, on ne veut pas réinitialiser le capteur, remise à 0.
     if (resetOffsetChrono.elapsed() > 1000) {
       resetOffsetIter = 0;
       resetOffsetChrono.stop();
@@ -376,6 +378,8 @@ void loop()
     moteur.setMoteurState(STOPPED);
     capteur.setThresholdSensor(0.5);
 
+
+		// En mode 1, on arrête le chrono et remet à 0 les itérations pour interdire le reset capteur.
     resetOffsetIter = 0;
     resetOffsetChrono.stop();
 
@@ -506,6 +510,7 @@ void loop()
     sortieMoteur = pwmMin;
     capteur.setThresholdSensor(0.5);
 
+		// En mode 5, on arrête le chrono et remet à 0 les itérations pour interdire le reset capteur.
     resetOffsetIter = 0;
     resetOffsetChrono.stop();
 
@@ -533,7 +538,11 @@ void loop()
     /*
        On attend 500ms puis la valeur actuelle du capteur est stockée et lissée sur 32 valeurs
     */
-    //led.ledState(etat);
+
+
+		/*
+			Je comprends pas le rapport au nombre 10.
+		*/
     if (resetOffsetIter != 10)
       resetOffsetChrono.restart();
     resetOffsetIter = 10;
@@ -738,6 +747,7 @@ void motorBrakePinInterrupt() {
     motorBrakeChrono.restart();
 
     // reset capteur de force
+		// Quand on active le frein moteur, si en mode 0
     if (powerCtrl == 0 && etat == INITIALISATION) {
       resetOffsetChrono.restart();
       resetOffsetIter++;
