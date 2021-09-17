@@ -238,8 +238,8 @@ void setup()
   Serial.begin(9600);
 
   Serial.println("###################");
-  Serial.println("## version 0.9.5: ");
-  Serial.println("## date: 20/07/2021: ");
+  Serial.println("## version 0.9.6: ");
+  Serial.println("## date: 17/09/2021: ");
   Serial.println("## MAAD93 ");
   Serial.println("###################");
 
@@ -348,9 +348,10 @@ void loop()
   ////////////////////////////////////////////////////:
 
   if (etat == INITIALISATION) {
-    led.ledPrint(valeurCapteur, sortieMoteur);
+    led.ledWait(valeurCapteur);
 
     moteur.setMoteurState(STOPPED);
+    sortieMoteur = 0;
     capteur.setThresholdSensor(0.5);
     switchCtrl(powerCtrl);
 
@@ -380,6 +381,7 @@ void loop()
     myPID.SetMode(MANUAL);
     led.ledState(etat);
     moteur.setMoteurState(STOPPED);
+    sortieMoteur = 0;
     capteur.setThresholdSensor(0.5);
 
 
@@ -480,7 +482,7 @@ void loop()
     moteur.setMoteurState(STOPPED);
     //moteur.setMoteurState(SPINNING);
     myPID.SetMode(MANUAL);
-    sortieMoteur = pwmMin;
+    sortieMoteur = 0;
     // myPID.SetMode(AUTOMATIC);
     // miseAJourPID();
 
@@ -511,7 +513,7 @@ void loop()
     led.ledState(etat);
     myPID.SetMode(MANUAL);
     moteur.setMoteurState(BRAKING);
-    sortieMoteur = pwmMin;
+    sortieMoteur = 0;
     capteur.setThresholdSensor(0.5);
 
 		// En mode 5, on arrête le chrono et remet à 0 les itérations pour interdire le reset capteur.

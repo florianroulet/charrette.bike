@@ -107,6 +107,48 @@ void RemorqueLed::ledPrint(float traction, float pwm){
  
 }
 
+void RemorqueLed::ledWait(float traction){
+  pixels.clear();
+  
+  // capteur
+  int pixNb = abs(traction/_maxTraction)*_numPixels/2;
+  if(_seuilTractionNulle - abs(traction) > 0){
+    // pas de mouvement
+    if(_mode==0){
+      pixels.setPixelColor(3,pixels.Color(0,0,30));
+      pixels.setPixelColor(4,pixels.Color(0,0,30));
+    }
+    else{
+      pixels.setPixelColor(2,pixels.Color(0,0,30));
+      pixels.setPixelColor(3,pixels.Color(0,0,30));
+      pixels.setPixelColor(4,pixels.Color(0,0,30));
+      pixels.setPixelColor(5,pixels.Color(0,0,30));
+    }
+  }
+  else if(traction>0){
+    // traction
+    for(int i = 0; i< pixNb; i++){
+       pixels.setPixelColor(i,pixels.Color(0,30,0));
+    }
+  }
+  else{
+    // compression
+    for(int i = 0; i< pixNb; i++){
+       pixels.setPixelColor(i,pixels.Color(30,0,0));
+    }
+  }
+
+      for(int i = _numPixels/2+1; i< _numPixels-1; i++){
+       if(_mode==0)
+           pixels.setPixelColor(i,pixels.Color(30,30,0));
+       else
+           pixels.setPixelColor(i,pixels.Color(30,00,30));
+   }
+  pixels.show();
+
+}
+
+
 void RemorqueLed::ledFail(error_state_t error){
   pixels.clear();
   pixels.setPixelColor(error,pixels.Color(100,100,0));
