@@ -332,11 +332,15 @@ void loop()
     motorBrakeMode = motorBrakeNewState;
     motorBrakeChrono.restart();
     motorBrakeChrono.stop();
+
+    // reset capteur de force
+		// Quand on active le frein moteur, si en mode 0
+    if (powerCtrl == 0 && etat == INITIALISATION) {
+      resetOffsetChrono.restart();
+      resetOffsetIter++;
+    }
+
   }
-
-
-
-
 
 
   ////////////////////////////////////////////////////:
@@ -606,8 +610,6 @@ void loop()
 
   }
   moteur.mettreLesGaz(sortieMoteur);
-
-
 }
 
 
@@ -746,12 +748,6 @@ void motorBrakePinInterrupt() {
     motorBrakeNewState = true;
     motorBrakeChrono.restart();
 
-    // reset capteur de force
-		// Quand on active le frein moteur, si en mode 0
-    if (powerCtrl == 0 && etat == INITIALISATION) {
-      resetOffsetChrono.restart();
-      resetOffsetIter++;
-    }
   }
   else {
     motorBrakeNewState = false;
