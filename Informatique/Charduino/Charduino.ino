@@ -112,19 +112,11 @@ MoteurEBike moteur = MoteurEBike();
 
 // Paramètres à changer:
 
-<<<<<<< HEAD:Charduino.ino
-double K1[3] = {1, 2, 0.1}; // boost, mode 0 pour les led
-double K2[3] = {1, 4, 0.1}; //marche, mode 1 pour les led
-float betaTab[2]={-3,-6};
-float gammaTab[2]={-6,-10};
-double consigneCapteurTab[2]={0.0,-2.0};
-=======
 	double K1[3] = {1, 4, 0.1}; // boost, mode 0 pour les led
 	double K2[3] = {1, 2, 0.1}; //marche, mode 1 pour les led
 	float betaTab[2]={-6,-3};
 	float gammaTab[2]={-9,-6};
 	double consigneCapteurTab[2]={-2.0,0.0};
->>>>>>> MAAD93:Informatique/Charduino/Charduino.ino
 
 	double sortieMoteur;    //output
 	double consigneCapteur = consigneCapteurTab[1]; //setpoint, valeur visée par le PID comme valeur de capteur.
@@ -132,11 +124,7 @@ double consigneCapteurTab[2]={0.0,-2.0};
 		                          //110 a été trouvée expérimentalement avec une batterie 48V et un contrôleur Ozo. En deça la roue ne tourne pas.
 		                          // ces valeurs sont à tester et corriger en cas de changement de batterie ou contrôleur.
 
-<<<<<<< HEAD:Charduino.ino
-PID myPID(&valeurCapteur, &sortieMoteur, &consigneCapteur, K1[0], K1[1], K1[2], P_ON_E, REVERSE);
-=======
 	PID myPID(&valeurCapteur, &sortieMoteur, &consigneCapteur, K1[0], K1[1], K1[2], P_ON_E, REVERSE);
->>>>>>> MAAD93:Informatique/Charduino/Charduino.ino
     // Entrée: ValeurCapteur
     // Valeur asservie: SortieMoteur, qui est un PWM allant de pwmMin à pwmMax
     // ConsigneCapteur: Valeur visée pour ValeurCapteur
@@ -253,13 +241,8 @@ void setup()
 
   Serial.println("###################");
   Serial.println("## version 0.9.6: ");
-<<<<<<< HEAD:Charduino.ino
-  Serial.println("## date: 17/07/2021: ");
-  Serial.println("## Remorque boumboum ");
-=======
   Serial.println("## date: 17/09/2021: ");
   Serial.println("## MAAD93 ");
->>>>>>> MAAD93:Informatique/Charduino/Charduino.ino
   Serial.println("###################");
 
 /*
@@ -309,15 +292,8 @@ void setup()
   stoppedChrono.restart();
   stoppedChrono.stop();
 
-<<<<<<< HEAD:Charduino.ino
-  pinMode(ledPin,OUTPUT);
-
- // led.ledWelcome();
-//  led.setMode(walkMode);
-=======
   led.ledWelcome();
   led.setMode(walkMode);
->>>>>>> MAAD93:Informatique/Charduino/Charduino.ino
 
   //capteur
   EEPROM.get(eeprom, capteur_offset);
@@ -367,18 +343,6 @@ void loop()
     motorBrakeMode = !motorBrakeNewState;
     motorBrakeChrono.restart();
     motorBrakeChrono.stop();
-<<<<<<< HEAD:Charduino.ino
-  }
-
-    if(analogRead(walkPin)>400 && analogRead(walkPin)<500 && walkMode==0)
-      setMode(1);
-    if(analogRead(walkPin)>50 && analogRead(walkPin)<100 && walkMode==1)
-        setMode(0);
-
-
-
-=======
->>>>>>> MAAD93:Informatique/Charduino/Charduino.ino
 
     // reset capteur de force
 		// Quand on active le frein moteur, si en mode 0
@@ -395,10 +359,7 @@ void loop()
   ////////////////////////////////////////////////////:
 
   if (etat == INITIALISATION) {
-<<<<<<< HEAD:Charduino.ino
-=======
     led.ledWait(valeurCapteur);
->>>>>>> MAAD93:Informatique/Charduino/Charduino.ino
 
     moteur.setMoteurState(STOPPED);
     sortieMoteur = 0;
@@ -515,9 +476,6 @@ void loop()
 
     moteur.setMoteurState(STOPPED);
     myPID.SetMode(MANUAL);
-<<<<<<< HEAD:Charduino.ino
-    sortieMoteur = pwmMin;
-=======
     sortieMoteur = 0;
     // myPID.SetMode(AUTOMATIC);
     // miseAJourPID();
@@ -526,7 +484,6 @@ void loop()
     //      flowingChrono.restart();
     //      flowingChrono.stop();
     //    }
->>>>>>> MAAD93:Informatique/Charduino/Charduino.ino
 
     if (transition5()) {
       etat = FREINAGE;
@@ -580,14 +537,11 @@ void loop()
     /*
        On attend 500ms puis la valeur actuelle du capteur est stockée et lissée sur 32 valeurs
     */
-<<<<<<< HEAD:Charduino.ino
-=======
 
 
 		/*
 			Je comprends pas le rapport au nombre 10.
 		*/
->>>>>>> MAAD93:Informatique/Charduino/Charduino.ino
     if (resetOffsetIter != 10)
       resetOffsetChrono.restart();
     resetOffsetIter = 10;
@@ -646,14 +600,6 @@ void loop()
 
   }
   moteur.mettreLesGaz(sortieMoteur);
-<<<<<<< HEAD:Charduino.ino
-
-  if(millis()%500>250)
-    digitalWrite(ledPin,HIGH);
-  else
-    digitalWrite(ledPin,LOW);
-=======
->>>>>>> MAAD93:Informatique/Charduino/Charduino.ino
 }
 
 
@@ -807,11 +753,7 @@ void setMode(int mode){
     consigneCapteur = consigneCapteurTab[1];
     beta = betaTab[1];
     gamma = gammaTab[1];
-<<<<<<< HEAD:Charduino.ino
-    myPID.SetOutputLimits(pwmMin, pwmMax);
-=======
     myPID.SetOutputLimits(pwmMin, 220);
->>>>>>> MAAD93:Informatique/Charduino/Charduino.ino
 
   }
   else{
@@ -819,11 +761,7 @@ void setMode(int mode){
     beta = betaTab[0];
     gamma = gammaTab[0];
     consigneCapteur = consigneCapteurTab[0];
-<<<<<<< HEAD:Charduino.ino
-    myPID.SetOutputLimits(pwmMin, 220);
-=======
     myPID.SetOutputLimits(pwmMin, pwmMax);
->>>>>>> MAAD93:Informatique/Charduino/Charduino.ino
 
   }
 
