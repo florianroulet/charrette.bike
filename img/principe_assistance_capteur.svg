@@ -1,22 +1,22 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <svg
-   xmlns:dc="http://purl.org/dc/elements/1.1/"
-   xmlns:cc="http://creativecommons.org/ns#"
-   xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
-   xmlns:svg="http://www.w3.org/2000/svg"
-   xmlns="http://www.w3.org/2000/svg"
-   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
-   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
    width="297mm"
    height="210mm"
    viewBox="0 0 297 210"
    version="1.1"
    id="svg8"
-   inkscape:version="1.0.2 (e86c870879, 2021-01-15, custom)"
-   sodipodi:docname="principe.svg"
-   inkscape:export-filename="/home/goku/Tiroir/Etudes/Bretagne Transition/principe.png"
+   inkscape:version="1.1 (c4e8f9ed74, 2021-05-24)"
+   sodipodi:docname="principe_assistance_capteur.svg"
+   inkscape:export-filename="/home/goku/Arduino/Charduino/img/principe_assistance_capteur.png"
    inkscape:export-xdpi="96"
-   inkscape:export-ydpi="96">
+   inkscape:export-ydpi="96"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg"
+   xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+   xmlns:cc="http://creativecommons.org/ns#"
+   xmlns:dc="http://purl.org/dc/elements/1.1/">
   <defs
      id="defs2">
     <rect
@@ -52,18 +52,19 @@
      inkscape:pageopacity="0.0"
      inkscape:pageshadow="2"
      inkscape:zoom="0.64"
-     inkscape:cx="708.62252"
-     inkscape:cy="498.75676"
+     inkscape:cx="709.375"
+     inkscape:cy="498.4375"
      inkscape:document-units="mm"
      inkscape:current-layer="layer1"
      inkscape:document-rotation="0"
      showgrid="false"
      showguides="false"
      inkscape:window-width="1594"
-     inkscape:window-height="1030"
+     inkscape:window-height="1013"
      inkscape:window-x="322"
      inkscape:window-y="0"
-     inkscape:window-maximized="0" />
+     inkscape:window-maximized="0"
+     inkscape:pagecheckerboard="0" />
   <metadata
      id="metadata5">
     <rdf:RDF>
@@ -72,7 +73,7 @@
         <dc:format>image/svg+xml</dc:format>
         <dc:type
            rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
-        <dc:title></dc:title>
+        <dc:title />
       </cc:Work>
     </rdf:RDF>
   </metadata>
@@ -128,12 +129,15 @@
       <text
          xml:space="preserve"
          id="text845"
-         style="font-style:normal;font-weight:normal;font-size:9.87778px;line-height:1.25;font-family:sans-serif;white-space:pre;shape-inside:url(#rect847);fill:#000000;fill-opacity:1;stroke:none;stroke-width:1;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1;"
+         style="font-style:normal;font-weight:normal;font-size:9.87778px;line-height:1.25;font-family:sans-serif;white-space:pre;shape-inside:url(#rect847);fill:#000000;fill-opacity:1;stroke:none;stroke-width:1;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
          transform="translate(15.868319,0.9309607)"><tspan
            x="89.634766"
-           y="103.30597"><tspan
-             style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:9.87778px;font-family:'DejaVu Math TeX Gyre';-inkscape-font-specification:'DejaVu Math TeX Gyre';fill:#000000;fill-opacity:1;stroke:none;stroke-width:1;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1">Charduin</tspan><tspan
-             style="shape-inside:url(#rect847)">o</tspan></tspan></text>
+           y="103.30597"
+           id="tspan173"><tspan
+             style="font-family:'DejaVu Math TeX Gyre';-inkscape-font-specification:'DejaVu Math TeX Gyre'"
+             id="tspan169">Charduin</tspan><tspan
+             style="shape-inside:url(#rect847)"
+             id="tspan171">o</tspan></tspan></text>
     </g>
     <path
        style="fill:none;stroke:#fbff2c;stroke-width:3;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
@@ -152,11 +156,13 @@
       <text
          xml:space="preserve"
          id="text862"
-         style="font-style:normal;font-weight:normal;font-size:9.87778px;line-height:1.25;font-family:sans-serif;white-space:pre;shape-inside:url(#rect864);fill:#000000;fill-opacity:1;stroke:none;"
+         style="font-style:normal;font-weight:normal;font-size:9.87778px;line-height:1.25;font-family:sans-serif;white-space:pre;shape-inside:url(#rect864);fill:#000000;fill-opacity:1;stroke:none"
          transform="translate(5.5655782,-10.674076)"><tspan
            x="13.365234"
-           y="45.446551"><tspan
-             style="shape-inside:url(#rect864)">Contrôleur</tspan></tspan></text>
+           y="45.446551"
+           id="tspan177"><tspan
+             style="shape-inside:url(#rect864)"
+             id="tspan175">Contrôleur</tspan></tspan></text>
     </g>
     <g
        id="g1016">
@@ -170,10 +176,11 @@
       <text
          xml:space="preserve"
          id="text868"
-         style="font-style:normal;font-weight:normal;font-size:10.5833px;line-height:1.25;font-family:sans-serif;white-space:pre;shape-inside:url(#rect870);fill:#000000;fill-opacity:1;stroke:none;"
+         style="font-style:normal;font-weight:normal;font-size:10.5833px;line-height:1.25;font-family:sans-serif;white-space:pre;shape-inside:url(#rect870);fill:#000000;fill-opacity:1;stroke:none"
          transform="translate(4.1965845,11.590128)"><tspan
            x="11.357422"
-           y="152.17233"><tspan>Batterie</tspan></tspan></text>
+           y="152.17233"
+           id="tspan179">Batterie</tspan></text>
     </g>
     <g
        id="g1177">
@@ -187,16 +194,20 @@
       <text
          xml:space="preserve"
          id="text874"
-         style="font-style:normal;font-weight:normal;font-size:9.87778px;line-height:1.25;font-family:sans-serif;white-space:pre;shape-inside:url(#rect876);fill:#000000;fill-opacity:1;stroke:none;"
+         style="font-style:normal;font-weight:normal;font-size:9.87778px;line-height:1.25;font-family:sans-serif;white-space:pre;shape-inside:url(#rect876);fill:#000000;fill-opacity:1;stroke:none"
          transform="translate(1.1768116,10.482359)"
          x="32.288479"
          y="0"><tspan
            x="161.87263"
-           y="160.45504"><tspan
-             style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:9.87778px;font-family:'Liberation Mono';-inkscape-font-specification:'Liberation Mono';text-align:center;text-anchor:middle">Boîtier de  </tspan></tspan><tspan
+           y="160.45504"
+           id="tspan183"><tspan
+             style="font-family:'Liberation Mono';-inkscape-font-specification:'Liberation Mono';text-align:center;text-anchor:middle"
+             id="tspan181">Boîtier de  </tspan></tspan><tspan
            x="170.76408"
-           y="172.85177"><tspan
-             style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:9.87778px;font-family:'Liberation Mono';-inkscape-font-specification:'Liberation Mono';text-align:center;text-anchor:middle">contrôle</tspan></tspan></text>
+           y="172.85177"
+           id="tspan187"><tspan
+             style="font-family:'Liberation Mono';-inkscape-font-specification:'Liberation Mono';text-align:center;text-anchor:middle"
+             id="tspan185">contrôle</tspan></tspan></text>
     </g>
     <g
        id="g1182">
@@ -215,11 +226,15 @@
          id="text884"
          transform="translate(-15.659677,0.1618726)"><tspan
            x="239.35364"
-           y="109.30795"><tspan
-             style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:9.87778px;font-family:'Liberation Mono';-inkscape-font-specification:'Liberation Mono';text-align:center;text-anchor:middle;stroke-width:0.264583">Capteur de </tspan></tspan><tspan
+           y="109.30795"
+           id="tspan191"><tspan
+             style="font-family:'Liberation Mono';-inkscape-font-specification:'Liberation Mono';text-align:center;text-anchor:middle"
+             id="tspan189">Capteur de </tspan></tspan><tspan
            x="239.35364"
-           y="121.70469"><tspan
-             style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:9.87778px;font-family:'Liberation Mono';-inkscape-font-specification:'Liberation Mono';text-align:center;text-anchor:middle;stroke-width:0.264583">force</tspan></tspan></text>
+           y="121.70469"
+           id="tspan195"><tspan
+             style="font-family:'Liberation Mono';-inkscape-font-specification:'Liberation Mono';text-align:center;text-anchor:middle"
+             id="tspan193">force</tspan></tspan></text>
     </g>
     <g
        id="g990">

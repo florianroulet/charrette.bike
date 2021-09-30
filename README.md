@@ -102,7 +102,7 @@ En équipant la barre d'attelage de jauge de contrainte, il est possible de pilo
 Ce système est mis sous tension par un simple interrupteur, ensuite sitôt que la remorque détecte qu'elle est en retard par rapport au vélo, elle actionnera son moteur jusqu'à rattraper le cycliste et dans le cas contraire où elle ira plus vite, la remorque ralentira voire activera son frein moteur.
 Cette assistance, plus simple à l'utilisation car il n'y a aucune modification à apporter au vélo-tracteur, est aussi plus compliquée à mettre en oeuvre soit-même et dépend de composants électroniques supplémentaires à approviosionner et à assembler.
 
-![Schéma de principe](/img/principe_assistance_capteur.svg)
+![Schéma de principe](/img/principe_assistance_capteur.png)
 
 ### Assistance manuelle
 
@@ -111,7 +111,7 @@ Il est possible de piloter la Charrette avec une gachette en tirant un câble ju
 Pour rester mettre de la remorque, et aussi rester dans le cadre de la loi française, il est impératif que le vélo reste tracteur et ne soit pas propulsé par la Charrette.
 En équipant le frein à inertie d'un contacteur, il est possible de couper le signal envoyé au contrôleur. Sitôt que la remorque vient appuyer sur le vélo, le frein à inertie s'enclenche, le contacteur aussi ouvrant le circuit et coupant l'assistance. L'ajout d'un circuit RC entre le contrôleur et le contacteur permet de lisser les accélérations et déccélérations.
 Cette solution est plus facile à mettre en oeuvre pour le constructeur mais moins comode pour l'usager qui doit préparer son vélo avant de partir.
-![Schéma de principe](/img/principe_assistance_gachette.svg)
+![Schéma de principe](/img/principe_assistance_gachette.png)
 
 
 ## Système de partage
@@ -126,11 +126,17 @@ La charrette peut être modifiée facilement et gagner de nouvelles fonctionnali
 ### Charrette-Pikip
 Ainsi il est possible d'ajouter des panneaux solaires par exemple et une enceinte [Pikip](https://www.pikip-solarspeakers.com) pour transformer la charrette en remorque Boum-Boum, un engin de célébrations massives.
 
+
+![Boumboum](/img/boumboum.jpg)
+
 ### Panneaux déployables
 Les tubes verticaux sont pensés comme chandeliers pour accueillir d'autres tubes et ainsi autoriser le pivotement de panneaux.
 Un exemple d'une charrette utilisée par l'association Déenbulles, une ludothèque itinérante.
 
+![Ludothèque](/img/ludothèque.jpg)
+![DJ Scène](/img/DJ-scène.jpg)
 
+### Examples d'utilisations:
 
+Davantage de photos sur [Charrette.bike](https://charrette.bike)
 ![Piano](/img/piano.jpg)
-![Boumboum](/img/boumboum.jpg)
