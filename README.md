@@ -39,7 +39,9 @@ La surface utile de chargement est de 1705x650mm, les ridelles font 330mm de hau
 ### Structure
 Les tubes de la structure sont soudés ensemble pour assurer rigidité et longue vie au châssis.
 Des plans de découpe laser des tubes existent mais la découpe à la main de chaque tube est possible.
-Nous travaillons avec de l'acier inox 304 et 316 mais il est possible d'utiliser n'importe quel acier de qualité.
+
+Nous travaillons avec de l'acier inox 304 et 316 mais il est possible d'utiliser n'importe quel acier de qualité, un passage à la peinture sera à considérer.
+
 Pour la soudure, nous avons des postes TIG et MIG dans notre atelier mais lors des formations, la soudure à l'arc avec baguette inox est utilisée.
 
 ![Châssis de la remorque](/img/charrette-65x165.jpg)
@@ -72,10 +74,12 @@ Un ressort limite les mouvements et tend à maintenir la remorque dans une posit
 En cas de freinage du pilote, la remorque vient s'appuyer sur la barre d'attelage et tire deux câbles qui freinent les roues arrières.
 Il s'agit là d'un frein à inertie qui est primordial pour la tenue de route et la sécurité du chargement.
 
-METTRE UNE PHOTO ET UN PLAN
 
 ### Frein de stationnement
-A l'arrêt, pour sécuriser la Charrette, il est possible de maintenir le frein à inertie actionné avec un LEVIER?. Le frein à inertie devient alors frein de stationnement.
+A l'arrêt, pour sécuriser la Charrette, il est possible de maintenir le frein à inertie actionné avec un crochet. Le frein à inertie devient alors frein de stationnement.
+
+
+![Frein à inertie et de stationnement](/img/frein-a-inertie.jpg)
 
 
 ### Tenue de route
@@ -86,6 +90,7 @@ Nous n'avons pas encore réussi à retourner la charrette dans un virage.
 Là où les vélos sont limités à 250W, les remorques à vélo n'observent pas cette limite tant qu'elles ne sont pas motrices, entendez qu'elles ne poussent pas le vélo.
 Le système d'assistance électrique met donc la remorque en équilibre derrière le cycliste et active même le freinage moteur en cas de besoin.
 Nous préconisons un moteur de 1200W et une batterie de 48V afin d'avoir assez de puissance pour déplacer jusqu'à 300kg, il faudra tout de même appuyer sur les pédales.
+
 A minima il faudra donc s'équiper:
 * d'un moteur moyeu 1000/1500W monté dans une roue 20"
 * d'un contrôleur de moteur 48V 25A
@@ -117,7 +122,8 @@ Cette solution est plus facile à mettre en oeuvre pour le constructeur mais moi
 ## Système de partage
 
 Un système informatique, pas encore disponible, permettra de mutualiser l'utilisation d'une charrette ou de n'importe quel vélo, pour étendre les imaginaires de toute un quartier. Le code s'appuiera sur celui d'[Open Source Bikeshare](https://github.com/cyklokoalicia/OpenSourceBikeShare).
-Ce système de partage a vocation a fonctionner sur un ordinateur type Raspberry Pi et peut
+
+Ce système de partage a vocation à fonctionner sur un ordinateur type Raspberry Pi et peut
 
 ## Modulaire
 
@@ -134,9 +140,35 @@ Les tubes verticaux sont pensés comme chandeliers pour accueillir d'autres tube
 Un exemple d'une charrette utilisée par l'association Déenbulles, une ludothèque itinérante.
 
 ![Ludothèque](/img/ludothèque.jpg)
+
 ![DJ Scène](/img/DJ-scène.jpg)
 
 ### Examples d'utilisations:
 
 Davantage de photos sur [Charrette.bike](https://charrette.bike)
 ![Piano](/img/piano.jpg)
+
+## Coût de revient
+
+Le temps passé à chercher et acheter les composants n'est pas pris en compte.
+
+| Partie | Description | Total |
+| ----------- | -----------  | ----------- |
+| Structure | Tubes, boulonnnerie, consommable soudure, ...| ???? |
+| Equipement vélo | Roues, câbles, gaines, ... | ???? |
+| Electronique Charduino| Composants, câbles, connecteurs | ???? |
+| Electronique assistance| Moteur, contrôleur, batterie | ???? |
+| Total| Matériel | ???? |
+
+
+## Temps d'assemblage
+
+Le temps passé à chercher, dessiner et/ou acheter les composants n'est pas pris en compte. On considère que les différentes techniques nécessaires sont déjà acquises à la personne qui assemble.
+
+| Partie | Description | Total |
+| ----------- | -----------  | ----------- |
+| Structure | Mise en place, sous contrainte, soudure, nettoyage | 2 jour |
+| Equipement vélo | Rayonnage des deux roues arrière, installation des composants, réglage des freins | 1,5 jours |
+| Electronique Charduino| Soudure des composants, connectiques | 1 jour |
+| Electronique assistance| Préparation connectique, branchement | 0,5 jour |
+| Total| Temps passé pour une charrette | 5 jours |

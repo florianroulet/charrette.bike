@@ -4,6 +4,7 @@
 
 * Décider d'un logiciel pour la documentation qui autorise l'exportation
   --> GitBook?
+  Il nous faudrait une table des matières
 
 
 Structure du répertoire git
@@ -27,3 +28,8 @@ Racine/
   README
     un descriptif du projet, le fonctionnement général de l'engin, son historique, son état actuel, son futur imaginé...
     le prix d'un kit, d'une charrette montée, avec ou sans assistance...
+
+
+
+SCHEMA
+  * contrôleur de moteur avec les connecteurs
