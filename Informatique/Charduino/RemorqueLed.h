@@ -38,6 +38,7 @@ class RemorqueLed
     void ledFail(error_state_t error);   // en cas d'erreur*
     void ledBegin();
     void ledClear();
+    void ledWait(float traction);
     void setMode(int mode);
     uint16_t numPixels();
     int _ledPin = 9;

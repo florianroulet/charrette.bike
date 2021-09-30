@@ -53,8 +53,8 @@ Reading<Differential<double>, unsigned long> dCapteur;
 double valeurCapteur;
 bool newDataReady = 0;
 bool capteurInitialise = 0;
-Chrono resetOffsetChrono;
-int resetOffsetIter;
+Chrono resetOffsetChrono; // Chrono pour ?
+int resetOffsetIter;			// compteur pour compter le nombre d'aller retour sur l'interrupteur brake
 MovingAverageFilter<double, double> movingOffset(16); // moyenne lissée sur 16 valeurs
 double newOffset, rawValue;
 
@@ -112,19 +112,31 @@ MoteurEBike moteur = MoteurEBike();
 
 // Paramètres à changer:
 
+<<<<<<< HEAD:Charduino.ino
 double K1[3] = {1, 2, 0.1}; // boost, mode 0 pour les led
 double K2[3] = {1, 4, 0.1}; //marche, mode 1 pour les led
 float betaTab[2]={-3,-6};
 float gammaTab[2]={-6,-10};
 double consigneCapteurTab[2]={0.0,-2.0};
+=======
+	double K1[3] = {1, 4, 0.1}; // boost, mode 0 pour les led
+	double K2[3] = {1, 2, 0.1}; //marche, mode 1 pour les led
+	float betaTab[2]={-6,-3};
+	float gammaTab[2]={-9,-6};
+	double consigneCapteurTab[2]={-2.0,0.0};
+>>>>>>> MAAD93:Informatique/Charduino/Charduino.ino
 
-double sortieMoteur;    //output
-double consigneCapteur = consigneCapteurTab[1]; //setpoint, valeur visée par le PID comme valeur de capteur.
-float pwmMin = 110, pwmMax = 255; // les valeurs minimales et maximales pour le PWM de la gachette.
-                                  //110 a été trouvée expérimentalement avec une batterie 48V et un contrôleur Ozo. En deça la roue ne tourne pas.
-                                  // ces valeurs sont à tester et corriger en cas de changement de batterie ou contrôleur.
+	double sortieMoteur;    //output
+	double consigneCapteur = consigneCapteurTab[1]; //setpoint, valeur visée par le PID comme valeur de capteur.
+	float pwmMin = 110, pwmMax = 255; // les valeurs minimales et maximales pour le PWM de la gachette.
+		                          //110 a été trouvée expérimentalement avec une batterie 48V et un contrôleur Ozo. En deça la roue ne tourne pas.
+		                          // ces valeurs sont à tester et corriger en cas de changement de batterie ou contrôleur.
 
+<<<<<<< HEAD:Charduino.ino
 PID myPID(&valeurCapteur, &sortieMoteur, &consigneCapteur, K1[0], K1[1], K1[2], P_ON_E, REVERSE);
+=======
+	PID myPID(&valeurCapteur, &sortieMoteur, &consigneCapteur, K1[0], K1[1], K1[2], P_ON_E, REVERSE);
+>>>>>>> MAAD93:Informatique/Charduino/Charduino.ino
     // Entrée: ValeurCapteur
     // Valeur asservie: SortieMoteur, qui est un PWM allant de pwmMin à pwmMax
     // ConsigneCapteur: Valeur visée pour ValeurCapteur
@@ -241,8 +253,13 @@ void setup()
 
   Serial.println("###################");
   Serial.println("## version 0.9.6: ");
+<<<<<<< HEAD:Charduino.ino
   Serial.println("## date: 17/07/2021: ");
   Serial.println("## Remorque boumboum ");
+=======
+  Serial.println("## date: 17/09/2021: ");
+  Serial.println("## MAAD93 ");
+>>>>>>> MAAD93:Informatique/Charduino/Charduino.ino
   Serial.println("###################");
 
 /*
@@ -292,10 +309,15 @@ void setup()
   stoppedChrono.restart();
   stoppedChrono.stop();
 
+<<<<<<< HEAD:Charduino.ino
   pinMode(ledPin,OUTPUT);
 
  // led.ledWelcome();
 //  led.setMode(walkMode);
+=======
+  led.ledWelcome();
+  led.setMode(walkMode);
+>>>>>>> MAAD93:Informatique/Charduino/Charduino.ino
 
   //capteur
   EEPROM.get(eeprom, capteur_offset);
@@ -345,6 +367,7 @@ void loop()
     motorBrakeMode = !motorBrakeNewState;
     motorBrakeChrono.restart();
     motorBrakeChrono.stop();
+<<<<<<< HEAD:Charduino.ino
   }
 
     if(analogRead(walkPin)>400 && analogRead(walkPin)<500 && walkMode==0)
@@ -354,8 +377,17 @@ void loop()
 
 
 
+=======
+>>>>>>> MAAD93:Informatique/Charduino/Charduino.ino
 
+    // reset capteur de force
+		// Quand on active le frein moteur, si en mode 0
+    if (powerCtrl == 0 && etat == INITIALISATION) {
+      resetOffsetChrono.restart();
+      resetOffsetIter++;
+    }
 
+  }
 
 
   ////////////////////////////////////////////////////:
@@ -363,11 +395,18 @@ void loop()
   ////////////////////////////////////////////////////:
 
   if (etat == INITIALISATION) {
+<<<<<<< HEAD:Charduino.ino
+=======
+    led.ledWait(valeurCapteur);
+>>>>>>> MAAD93:Informatique/Charduino/Charduino.ino
 
     moteur.setMoteurState(STOPPED);
+    sortieMoteur = 0;
     capteur.setThresholdSensor(0.5);
     switchCtrl(powerCtrl);
 
+
+		// Si ça fait plus de 1000ms que le chrono est lancé, on ne veut pas réinitialiser le capteur, remise à 0.
     if (resetOffsetChrono.elapsed() > 1000) {
       resetOffsetIter = 0;
       resetOffsetChrono.stop();
@@ -391,8 +430,11 @@ void loop()
 
     myPID.SetMode(MANUAL);
     moteur.setMoteurState(STOPPED);
+    sortieMoteur = 0;
     capteur.setThresholdSensor(0.5);
 
+
+		// En mode 1, on arrête le chrono et remet à 0 les itérations pour interdire le reset capteur.
     resetOffsetIter = 0;
     resetOffsetChrono.stop();
 
@@ -473,7 +515,18 @@ void loop()
 
     moteur.setMoteurState(STOPPED);
     myPID.SetMode(MANUAL);
+<<<<<<< HEAD:Charduino.ino
     sortieMoteur = pwmMin;
+=======
+    sortieMoteur = 0;
+    // myPID.SetMode(AUTOMATIC);
+    // miseAJourPID();
+
+    //   if(flowingChrono.isRunning()){
+    //      flowingChrono.restart();
+    //      flowingChrono.stop();
+    //    }
+>>>>>>> MAAD93:Informatique/Charduino/Charduino.ino
 
     if (transition5()) {
       etat = FREINAGE;
@@ -496,9 +549,10 @@ void loop()
 
     myPID.SetMode(MANUAL);
     moteur.setMoteurState(BRAKING);
-    sortieMoteur = pwmMin;
+    sortieMoteur = 0;
     capteur.setThresholdSensor(0.5);
 
+		// En mode 5, on arrête le chrono et remet à 0 les itérations pour interdire le reset capteur.
     resetOffsetIter = 0;
     resetOffsetChrono.stop();
 
@@ -526,6 +580,14 @@ void loop()
     /*
        On attend 500ms puis la valeur actuelle du capteur est stockée et lissée sur 32 valeurs
     */
+<<<<<<< HEAD:Charduino.ino
+=======
+
+
+		/*
+			Je comprends pas le rapport au nombre 10.
+		*/
+>>>>>>> MAAD93:Informatique/Charduino/Charduino.ino
     if (resetOffsetIter != 10)
       resetOffsetChrono.restart();
     resetOffsetIter = 10;
@@ -563,7 +625,7 @@ void loop()
 
   */
 
-  flowingOrNot();
+ //flowingOrNot();
 
 
   if (debugPython) {
@@ -584,11 +646,14 @@ void loop()
 
   }
   moteur.mettreLesGaz(sortieMoteur);
+<<<<<<< HEAD:Charduino.ino
 
   if(millis()%500>250)
     digitalWrite(ledPin,HIGH);
   else
     digitalWrite(ledPin,LOW);
+=======
+>>>>>>> MAAD93:Informatique/Charduino/Charduino.ino
 }
 
 
@@ -727,11 +792,6 @@ void motorBrakePinInterrupt() {
     motorBrakeNewState = true;
     motorBrakeChrono.restart();
 
-    // reset capteur de force
-    if (powerCtrl == 0 && etat == INITIALISATION) {
-      resetOffsetChrono.restart();
-      resetOffsetIter++;
-    }
   }
   else {
     motorBrakeNewState = false;
@@ -747,7 +807,11 @@ void setMode(int mode){
     consigneCapteur = consigneCapteurTab[1];
     beta = betaTab[1];
     gamma = gammaTab[1];
+<<<<<<< HEAD:Charduino.ino
     myPID.SetOutputLimits(pwmMin, pwmMax);
+=======
+    myPID.SetOutputLimits(pwmMin, 220);
+>>>>>>> MAAD93:Informatique/Charduino/Charduino.ino
 
   }
   else{
@@ -755,7 +819,11 @@ void setMode(int mode){
     beta = betaTab[0];
     gamma = gammaTab[0];
     consigneCapteur = consigneCapteurTab[0];
+<<<<<<< HEAD:Charduino.ino
     myPID.SetOutputLimits(pwmMin, 220);
+=======
+    myPID.SetOutputLimits(pwmMin, pwmMax);
+>>>>>>> MAAD93:Informatique/Charduino/Charduino.ino
 
   }
 
@@ -897,25 +965,31 @@ void debugMessage()
   // Serial.print(data);
   Serial.print(" vitesse :");  Serial.print(vitesseMoyenne);  Serial.print("\t");
   Serial.print("sortie Moteur :");  Serial.print(sortieMoteur);  Serial.print("\t");
-  Serial.print("Moteur state :");  Serial.print(moteur.getMoteurState());  Serial.print("\t");
+//  Serial.print("Moteur state :");  Serial.print(moteur.getMoteurState());  Serial.print("\t");
   Serial.print("Etat :");  Serial.print(etat);  Serial.print("\t");
   //  Serial.print("BRakeMotor pin :");  Serial.print(motorBrakeMode);  Serial.print("\t");  Serial.print(resetOffsetIter);   Serial.print("\t"); //Serial.print(resetOffsetChrono.elapsed());
   //Serial.print("chrono :");  Serial.print(chronoFrein.isRunning());  Serial.print(" : ");  Serial.print(chronoFrein.elapsed());  Serial.print("\t");
-  Serial.print("flowing: "); Serial.print(flowingState); Serial.print("\t");
-  Serial.print("isFlowing: "); Serial.print(isFlowing);  Serial.print(" : ");  Serial.print(flowingChrono.elapsed());  Serial.print("\t");
+//  Serial.print("flowing: "); Serial.print(flowingState); Serial.print("\t");
+//  Serial.print("isFlowing: "); Serial.print(isFlowing);  Serial.print(" : ");  Serial.print(flowingChrono.elapsed());  Serial.print("\t");
  // Serial.print("stoppedChrono :"); Serial.print(stoppedChrono.elapsed());  Serial.print("\t ");
   Serial.print("Ampere "); Serial.print(wattmetre.getCurrent());  Serial.print("A\t");
+  Serial.print("ampere raw "); Serial.print(wattmetre.getCurrentRaw());  Serial.print("\t");
   Serial.print("Tension: ");Serial.print(wattmetre.getTension());  Serial.print("V\t");
   // Serial.print(wattmetre.getPower());  Serial.print("W\t");
-  Serial.print("Wattmetre state "); Serial.print(wattmetre.getState());  Serial.print("\t");
+// Serial.print("Wattmetre state "); Serial.print(wattmetre.getState());  Serial.print("\t");
   //  Serial.print("Kd: ");Serial.print(Kd);  Serial.print("\t");
-  Serial.print("Kp: "); Serial.print(myPID.GetKp());  Serial.print("\t");
+  //  Serial.print("Kp: "); Serial.print(myPID.GetKp());  Serial.print("\t");
     Serial.print("Ki: ");Serial.print(myPID.GetKi());  Serial.print("\t");
   //  Serial.print("Kd: ");Serial.print(myPID.GetKd());  Serial.print("\t");
   Serial.print("Brake: "); Serial.print(motorBrakeMode);  Serial.print("\t");
   Serial.print("Walk: "); Serial.print(walkMode);  Serial.print("\t");
   Serial.print("gamma: "); Serial.print(gamma);  Serial.print("\t");
-  Serial.print("Mode: "); Serial.print(analogRead(walkPin));  Serial.print("\t");
+  Serial.print("Mode: ");
+  if(walkMode)
+    Serial.print("lent");
+  else
+    Serial.print("rapide");
+  Serial.print("\t");
 
 
   Serial.print("Capteur :");  Serial.print(valeurCapteur);  Serial.print("\t");//Serial.print(capteur.getRaw());Serial.print("\t");Serial.print(capteur.getReadIndex());Serial.print("\t");
