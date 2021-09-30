@@ -26,62 +26,111 @@ J'ai ainsi été propulsée sous les feux d'une petite communauté de bricoleurs
 
 Ce monde décrit à l'instant, c'est celui vers lequel me porte Véloma avec l'aide de l'ADEME, du réseau mis à disposition et des copains dont tu peux faire partie. Je suis sur cette route depuis novembre 2020 et jusqu'à octobre 2022.
 
+## Libre, auto-constructible et réparable
+Les concepteurs initiaux de la remorque croient en un monde inspiré du logiciel libre, un monde qui n'a pas peur de partager ses connaissances pour les voir être appropriées par d'autres, améliorées, modifiées ou détournées.
+Ainsi l'intégralité des plans de la charrette seront mis à disposition sur ce site sous licence CERN Open Hardware V2. Le code sera partagé sous licence CC-BY-SA.
+
 ## La remorque
+La remorque est un engin roulant à trois roues qui s'attele sur la tige de selle d'un vélo.
+Elle peut aussi être tractée par un humain voire un animal de traie.
+La structure et les roues ont été dimensionnées pour supporter 300kg.
+La surface utile de chargement est de 1705x650mm, les ridelles font 330mm de haut, la garde au sol est de 360mm.
 
 ### Structure
+Les tubes de la structure sont soudés ensemble pour assurer rigidité et longue vie au châssis.
+Des plans de découpe laser des tubes existent mais la découpe à la main de chaque tube est possible.
+Nous travaillons avec de l'acier inox 304 et 316 mais il est possible d'utiliser n'importe quel acier de qualité.
+Pour la soudure, nous avons des postes TIG et MIG dans notre atelier mais lors des formations, la soudure à l'arc avec baguette inox est utilisée.
+
+![Châssis de la remorque]({/images/charrette-65x165.jpg)
+
+Une réflexion est menée pour la fabrication de fourche 20":
+
+
+![Fourche 20"]({/images/fourche20.jpg)
+
 
 ### Equipement vélo
+La charrette est un équipement de cycles et à ce titre est équipée comme un vélo:
+* Jantes kargo;
+* Rayons inox renforcés;
+* Moyeux renforcés;
+* Garde-boue en aluminium;
+* Axes de roues diamètre 15 en acier plein et faits chez un tourneur;
+* Freinage à câble;
+* Etrier de frein à disque BB5;
+* Jeu de direction interne;
+* Potence courte.
+
+Tous ces équipements sont au maximum sourcés en France ou en Europe.
+Une attention toute particulière a été portée aux roues que nous assemblons nous-mêmes afin qu'une charge de 300kg soit supportées dynamiquement entre les trois roues et axes.
+
 
 ### Système de freinage inertiel
-
-Le châssis et les roues sont dimensionnés pour supporter 300kg de charge en déplacement. Seulement s'il est possible de tirer cette masse avec de bonnes jambes, le freinage d'urgence pourrait envoyer le cycliste dans un rétroviseur de voiture.
-Avec le système de freinage à inertie de la charreete, un vélo qui freine, c'est un chargement qui s'arrête immédiatement.
-Installé dans la barre d'attelage, un jeu de ressort et de roulements à bille s'actionne en cas de freinage pour arrêter la remorque en même temps que le cycliste.
-Primordial pour la tenue de route et la sécurité du chargement.
+Un mouvement relatif entre la barre d'attelage et la remorque est autorisé par un roulement linéaire dans le sens de la marche.
+Un ressort limite les mouvements et tend à maintenir la remorque dans une position au repos.
+En cas de freinage du pilote, la remorque vient s'appuyer sur la barre d'attelage et tire deux câbles qui freinent les roues arrières.
+Il s'agit là d'un frein à inertie qui est primordial pour la tenue de route et la sécurité du chargement.
 
 METTRE UNE PHOTO ET UN PLAN
 
-### Frein parking
+### Frein de stationnement
+A l'arrêt, pour sécuriser la Charrette, il est possible de maintenir le frein à inertie actionné avec un LEVIER?. Le frein à inertie devient alors frein de stationnement.
 
 
+### Tenue de route
+Nous n'avons pas encore réussi à retourner la charrette dans un virage.
 
 ## Assistance électrique
 
 Là où les vélos sont limités à 250W, les remorques à vélo n'observent pas cette limite tant qu'elles ne sont pas motrices, entendez qu'elles ne poussent pas le vélo.
-Le système d'assistance électrique met donc la remorque en équilibre.
-Un moteur de 1200W et une batterie 48V permettent de déplacer jusqu'à 300kg, il faudra tout de même appuyé sur les pédales.
+Le système d'assistance électrique met donc la remorque en équilibre derrière le cycliste et active même le freinage moteur en cas de besoin.
+Nous préconisons un moteur de 1200W et une batterie de 48V afin d'avoir assez de puissance pour déplacer jusqu'à 300kg, il faudra tout de même appuyer sur les pédales.
+A minima il faudra donc s'équiper:
+* d'un moteur moyeu 1000/1500W monté dans une roue 20"
+* d'un contrôleur de moteur 48V 25A
+* d'une batterie de 48V 20Ah
+
+Deux types d'assistance ont été développés:
+ - Une assistance "intelligente" qui détecte le retard de la remorque par rapport au cycliste et assiste en fonction.
+ - Une assistance manuelle qui est pilotée par une gachette au guidon du cycliste.
 
 
-### Assistance électrique
+### Assistance "intelligente"
 
-Pour aider le cycliste, il est possible d'équiper la charrette avec un système d'assistance électrique de vélo et de le piloter via un microcontrôleur type Arduino, un capteur de force et un capteur de vitesse.
-Ce système est mis sous tension par un simple interrupteur, ensuite sitôt que la remorque détecte qu'elle est en retard par rapport au vélo, elle actionnera son moteur jusqu'à rattraper le cycliste et dans le cas contraire où elle irait plus vite, la remorque ralentira voire activera son frein moteur.
-Batterie au plomb ou au lithium, c'est selon les besoins.
+En équipant la barre d'attelage de jauge de contrainte, il est possible de piloter l'assistance électrique avec un arduino.
+Ce système est mis sous tension par un simple interrupteur, ensuite sitôt que la remorque détecte qu'elle est en retard par rapport au vélo, elle actionnera son moteur jusqu'à rattraper le cycliste et dans le cas contraire où elle ira plus vite, la remorque ralentira voire activera son frein moteur.
+Cette assistance, plus simple à l'utilisation car il n'y a aucune modification à apporter au vélo-tracteur, est aussi plus compliquée à mettre en oeuvre soit-même et dépend de composants électroniques supplémentaires à approviosionner et à assembler.
 
-### Volume de chargement
+![Schéma de principe]({/images/principe_assistance_capteur.svg)
 
-Le volume utile de chargement privilégié est de 65cm de large, 165cm de long pour 30cm de hauteur de ridelle.
-Ainsi les boîtes agricoles de 60x40cm rentrent par strate de huit.
+### Assistance manuelle
 
-### Partageable
+Les systèmes d'assistance électrique standard peuvent fonctionner avec une gachette d'accélération. L'exemple en est des trottinettes électriques.
+Il est possible de piloter la Charrette avec une gachette en tirant un câble jusqu'au guidon.
+Pour rester mettre de la remorque, et aussi rester dans le cadre de la loi française, il est impératif que le vélo reste tracteur et ne soit pas propulsé par la Charrette.
+En équipant le frein à inertie d'un contacteur, il est possible de couper le signal envoyé au contrôleur. Sitôt que la remorque vient appuyer sur le vélo, le frein à inertie s'enclenche, le contacteur aussi ouvrant le circuit et coupant l'assistance. L'ajout d'un circuit RC entre le contrôleur et le contacteur permet de lisser les accélérations et déccélérations.
+Cette solution est plus facile à mettre en oeuvre pour le constructeur mais moins comode pour l'usager qui doit préparer son vélo avant de partir.
+![Schéma de principe]({/images/principe_assistance_gachette.svg)
 
-Un système informatique, pas encore disponible, permettra de mutualiser l'utilisation d'une charrette ou de n'importe quel vélo, pour étendre les imaginaires de toute un quartier. Le code s'appuiera sur celui d'[Open Source Bikeshare](https://github.com/cyklokoalicia/OpenSourceBikeShare)
 
-### Modulaire
+## Système de partage
+
+Un système informatique, pas encore disponible, permettra de mutualiser l'utilisation d'une charrette ou de n'importe quel vélo, pour étendre les imaginaires de toute un quartier. Le code s'appuiera sur celui d'[Open Source Bikeshare](https://github.com/cyklokoalicia/OpenSourceBikeShare).
+Ce système de partage a vocation a fonctionner sur un ordinateur type Raspberry Pi et peut
+
+## Modulaire
 
 La charrette peut être modifiée facilement et gagner de nouvelles fonctionnalités.
-Ainsi il est possible d'ajouter des panneaux solaires par exemple et une enceinte [Pikip](https://www.pikip-solarspeakers.com) pour transformer la charrette en remorque Boum-Boum, un engin de célébrations massives
 
+### Charrette-Pikip
+Ainsi il est possible d'ajouter des panneaux solaires par exemple et une enceinte [Pikip](https://www.pikip-solarspeakers.com) pour transformer la charrette en remorque Boum-Boum, un engin de célébrations massives.
 
-![Piano]({static}/images/piano.jpg)
-![Boumboum]({static}/images/boumboum.jpg)
-
-
-### Libre, auto-constructible et réparable
-
-Les concepteurs de la remorque croient en un monde inspiré du logiciel libre, un monde qui n'a pas peur de partager ses connaissances pour les voir être appropriées par d'autres, améliorées, modifiées ou détournées.
-Ainsi l'intégralité des plans de la charrette seront mis à disposition sur ce site sous licence Open Hardware.
+### Panneaux déployables
+Les tubes verticaux sont pensés comme chandeliers pour accueillir d'autres tubes et ainsi autoriser le pivotement de panneaux.
+Un exemple d'une charrette utilisée par l'association Déenbulles, une ludothèque itinérante.
 
 
 
-**En mode auto-freinante et auto-tractée, elles deviennent alors de formidables compagnons d’autonomie quotidienne.**
+![Piano](/images/piano.jpg)
+![Boumboum]({/images/boumboum.jpg)
