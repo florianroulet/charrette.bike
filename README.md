@@ -42,12 +42,12 @@ Des plans de découpe laser des tubes existent mais la découpe à la main de ch
 Nous travaillons avec de l'acier inox 304 et 316 mais il est possible d'utiliser n'importe quel acier de qualité.
 Pour la soudure, nous avons des postes TIG et MIG dans notre atelier mais lors des formations, la soudure à l'arc avec baguette inox est utilisée.
 
-![Châssis de la remorque]({/images/charrette-65x165.jpg)
+![Châssis de la remorque](/images/charrette-65x165.jpg)
 
 Une réflexion est menée pour la fabrication de fourche 20":
 
 
-![Fourche 20"]({/images/fourche20.jpg)
+![Fourche 20"](/images/fourche20.jpg)
 
 
 ### Equipement vélo
@@ -102,7 +102,7 @@ En équipant la barre d'attelage de jauge de contrainte, il est possible de pilo
 Ce système est mis sous tension par un simple interrupteur, ensuite sitôt que la remorque détecte qu'elle est en retard par rapport au vélo, elle actionnera son moteur jusqu'à rattraper le cycliste et dans le cas contraire où elle ira plus vite, la remorque ralentira voire activera son frein moteur.
 Cette assistance, plus simple à l'utilisation car il n'y a aucune modification à apporter au vélo-tracteur, est aussi plus compliquée à mettre en oeuvre soit-même et dépend de composants électroniques supplémentaires à approviosionner et à assembler.
 
-![Schéma de principe]({/images/principe_assistance_capteur.svg)
+![Schéma de principe](/images/principe_assistance_capteur.svg)
 
 ### Assistance manuelle
 
@@ -111,7 +111,7 @@ Il est possible de piloter la Charrette avec une gachette en tirant un câble ju
 Pour rester mettre de la remorque, et aussi rester dans le cadre de la loi française, il est impératif que le vélo reste tracteur et ne soit pas propulsé par la Charrette.
 En équipant le frein à inertie d'un contacteur, il est possible de couper le signal envoyé au contrôleur. Sitôt que la remorque vient appuyer sur le vélo, le frein à inertie s'enclenche, le contacteur aussi ouvrant le circuit et coupant l'assistance. L'ajout d'un circuit RC entre le contrôleur et le contacteur permet de lisser les accélérations et déccélérations.
 Cette solution est plus facile à mettre en oeuvre pour le constructeur mais moins comode pour l'usager qui doit préparer son vélo avant de partir.
-![Schéma de principe]({/images/principe_assistance_gachette.svg)
+![Schéma de principe](/images/principe_assistance_gachette.svg)
 
 
 ## Système de partage
@@ -133,4 +133,4 @@ Un exemple d'une charrette utilisée par l'association Déenbulles, une ludothè
 
 
 ![Piano](/images/piano.jpg)
-![Boumboum]({/images/boumboum.jpg)
+![Boumboum](/images/boumboum.jpg)
