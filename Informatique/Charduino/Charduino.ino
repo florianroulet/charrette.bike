@@ -2,7 +2,6 @@
 #include <Chrono.h>
 #include "MoteurEBike.h"
 #include <PID_v1.h>
-#include "RemorqueLed.h"
 #include <SoftFilters.h>
 #include "PinChangeInterrupt.h"
 #include "wattmeter.h"
@@ -115,7 +114,7 @@ MoteurEBike moteur = MoteurEBike();
 	double K1[3] = {1, 4, 0.1}; // boost, mode 0 pour les led
 	double K2[3] = {1, 2, 0.1}; //marche, mode 1 pour les led
 	float betaTab[2]={-6,-3};
-	float gammaTab[2]={-9,-6};
+	float gammaTab[2]={-10,-6};
 	double consigneCapteurTab[2]={-2.0,0.0};
 
 	double sortieMoteur;    //output
@@ -210,7 +209,7 @@ Wattmeter wattmetre;
 int amPin = old ? A4 : A6; // select the input pin for the potentiometer  vert
 int vPin = old ? A5 : A7; // select the input pin for the potentiometer   jaune
 float amCalib = 28.84;
-float vCalib = 22.41;
+float vCalib = 18.60;
 
 bool isFlowing;
 Chrono flowingChrono; // chrono pour s'avoir depuis quand on envoie un pwm
@@ -233,16 +232,15 @@ bool walkMode = 1;
 bool motorBrakeMode = 0;
 
 
-
 void setup()
 {
 
   Serial.begin(9600);
 
   Serial.println("###################");
-  Serial.println("## version 0.9.6: ");
-  Serial.println("## date: 17/09/2021: ");
-  Serial.println("## MAAD93 ");
+  Serial.println("## version 0.9.7: ");
+  Serial.println("## date: 30/10/2021: ");
+  Serial.println("## Boulanger ");
   Serial.println("###################");
 
 /*
@@ -285,16 +283,17 @@ void setup()
   attachPCINT(digitalPinToPCINT(ctrlAlive), interruptCtrlAlive, CHANGE);
 
   // Wattmetre
-  wattmetre = Wattmeter(amPin, vPin, amCalib, vCalib, 36);
+  wattmetre = Wattmeter(amPin, vPin, amCalib, vCalib, 48);
 
+  // boîtier de contrôle
+  pinMode(ledPin,OUTPUT);
+/*
   flowingChrono.restart();
   flowingChrono.stop();
   stoppedChrono.restart();
   stoppedChrono.stop();
 
-  led.ledWelcome();
-  led.setMode(walkMode);
-
+*/
   //capteur
   EEPROM.get(eeprom, capteur_offset);
   Serial.print("## offset: "); Serial.println(capteur_offset);
@@ -354,12 +353,17 @@ void loop()
   }
 
 
+	if(analogRead(walkPin)>300 && analogRead(walkPin)<500 && walkMode==1)
+	  setMode(0);
+	if(analogRead(walkPin)>50 && analogRead(walkPin)<100 && walkMode==0)
+	    setMode(1);
+
+
   ////////////////////////////////////////////////////:
   ///////////////////  0  ////////////////////////////
   ////////////////////////////////////////////////////:
 
   if (etat == INITIALISATION) {
-    led.ledWait(valeurCapteur);
 
     moteur.setMoteurState(STOPPED);
     sortieMoteur = 0;
@@ -399,10 +403,12 @@ void loop()
     resetOffsetIter = 0;
     resetOffsetChrono.stop();
 
+		/* a supprimer si on retire le calcul de puissance consommée.
     if (flowingChrono.isRunning()) {
       flowingChrono.restart();
       flowingChrono.stop();
     }
+		*/
 
     if (transition5()) {
       etat = FREINAGE;
@@ -426,13 +432,7 @@ void loop()
     if (!flowingChrono.isRunning()) {
       flowingChrono.restart(); //
     }
-    /*
-      if(wattmetre.getState()==3)
-      led.ledPrint(valeurCapteur,sortieMoteur);
-      else{
-      led.ledFail(2);
-      }
-    */
+
     capteur.setThresholdSensor(0.0);
     //   flowingOrNot();
 
@@ -477,13 +477,6 @@ void loop()
     moteur.setMoteurState(STOPPED);
     myPID.SetMode(MANUAL);
     sortieMoteur = 0;
-    // myPID.SetMode(AUTOMATIC);
-    // miseAJourPID();
-
-    //   if(flowingChrono.isRunning()){
-    //      flowingChrono.restart();
-    //      flowingChrono.stop();
-    //    }
 
     if (transition5()) {
       etat = FREINAGE;
@@ -491,8 +484,9 @@ void loop()
     else if (transition0())
       etat = INITIALISATION;
     else  if (transition42())
-      //  etat = ROULE;
-      etat = ATTENTE;
+      etat = ROULE;
+		// c'était en état == ATTENTE, càd  état 1. Pourquoi?
+    //  etat = ATTENTE;
     else if (transition45())
       etat = FREINAGE;
   }
@@ -513,10 +507,12 @@ void loop()
     resetOffsetIter = 0;
     resetOffsetChrono.stop();
 
+		/*
     if (flowingChrono.isRunning()) {
       flowingChrono.restart();
       flowingChrono.stop();
     }
+		*/
 
     if (transition5()) {
       etat = FREINAGE;
@@ -565,22 +561,6 @@ void loop()
      Serial.println("Sortie de cas");
   }
 
-  /*
-    if(etat==ROULE){
-     if(millis()%2000>1000){
-       sortieMoteur=240;
-       moteur.setMoteurState(SPINNING);
-     }
-     else{
-       sortieMoteur=0;
-       moteur.setMoteurState(BRAKING);
-       }
-    }
-
-  */
-
- //flowingOrNot();
-
 
   if (debugPython) {
 
@@ -600,6 +580,11 @@ void loop()
 
   }
   moteur.mettreLesGaz(sortieMoteur);
+
+  if(millis()%500>250)
+    digitalWrite(ledPin,HIGH);
+  else
+    digitalWrite(ledPin,LOW);
 }
 
 
@@ -753,7 +738,7 @@ void setMode(int mode){
     consigneCapteur = consigneCapteurTab[1];
     beta = betaTab[1];
     gamma = gammaTab[1];
-    myPID.SetOutputLimits(pwmMin, 220);
+    myPID.SetOutputLimits(pwmMin, pwmMax);
 
   }
   else{
@@ -913,6 +898,7 @@ void debugMessage()
   Serial.print("Ampere "); Serial.print(wattmetre.getCurrent());  Serial.print("A\t");
   Serial.print("ampere raw "); Serial.print(wattmetre.getCurrentRaw());  Serial.print("\t");
   Serial.print("Tension: ");Serial.print(wattmetre.getTension());  Serial.print("V\t");
+  Serial.print("Tension raw: ");Serial.print(wattmetre.getTensionRaw());  Serial.print("V\t");
   // Serial.print(wattmetre.getPower());  Serial.print("W\t");
 // Serial.print("Wattmetre state "); Serial.print(wattmetre.getState());  Serial.print("\t");
   //  Serial.print("Kd: ");Serial.print(Kd);  Serial.print("\t");
@@ -928,6 +914,7 @@ void debugMessage()
   else
     Serial.print("rapide");
   Serial.print("\t");
+  Serial.print(analogRead(walkPin));Serial.print("\t");
 
 
   Serial.print("Capteur :");  Serial.print(valeurCapteur);  Serial.print("\t");//Serial.print(capteur.getRaw());Serial.print("\t");Serial.print(capteur.getReadIndex());Serial.print("\t");
