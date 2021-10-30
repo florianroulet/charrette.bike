@@ -1,9 +1,13 @@
 # CHARRETTE: CHARRETTE Hardi Auto-freinante Remorquable Réservable Esthétique Tractable Tenace Électrique
 
 ## Description
-La charrette est une remorque à trois roues pour vélo.
-Le but de cette remorque est de proposer un outil simple et efficace pour favoriser la vélo-logistique. Le grand volume de chargement, la robustesse du châssis, la facilité d'attelage et le système d'auto-traction encouragent chacun à s'approprier facilement cet outil.
-La remorque est pensée pour l'auto-construction. La stabilité des 3 roues et l'attache rapide facilitent le déplacement de charges. Un système de réservation permet de mutualiser les usages et réduire encore plus largement le besoin en voiture ou fourgon individuel.
+Charrette est une remorque à vélo à trois roues avec système  de  freinage  inertiel et un système d’assistance électrique autonome.
+ * Pensée  pour  l’autoconstruction  et  une  diffusion large, la remorque s’attelle sur toutes les tiges de selle de vélo  ou se tire à la main.
+ * Le  mécanisme  du  frein  à  inertie  automatique  protège remorque et cycliste en permettant d’augmenter la charge utile jusqu’à 300 kg.
+ * Le format de chargement est prévue pour la vélologistique sur palette ou boites transport Euro.
+ * Une assistance électrique est conçue pour que la charrette accompagne indépendamment le vélo en modulant sa  propre puissance.
+ * D’autres éléments déployables, solaires ou fonctionnels  assurent une grande variété d’usages (restauration, culturel, social....).
+ * La remorque en source libre est conçue en tubes carrés simples à provisionner et facilement soudable.
 
 ### Historique selon la Charrette
 Moi, la charrette, remorque à vélo dont la conception a été commencée et est maintenue à ce jour par Véloma, je suis le fruit d'un long cheminement, d'itérations successives, d'expérimentations pour obtenir un engin roulant tractable à vélo stable et efficace.
@@ -28,7 +32,7 @@ Ce monde décrit à l'instant, c'est celui vers lequel me porte Véloma avec l'a
 
 ## Libre, auto-constructible et réparable
 Les concepteurs initiaux de la remorque croient en un monde inspiré du logiciel libre, un monde qui n'a pas peur de partager ses connaissances pour les voir être appropriées par d'autres, améliorées, modifiées ou détournées.
-Ainsi l'intégralité des plans de la charrette seront mis à disposition sur ce site sous licence CERN Open Hardware V2. Le code sera partagé sous licence CC-BY-SA.
+Ainsi l'intégralité des plans de la charrette seront mis à disposition sur ce site sous licence CERN-OHL-W v2. Le code sera partagé sous licence CC-BY-SA.
 
 ## La remorque
 La remorque est un engin roulant à trois roues qui s'attele sur la tige de selle d'un vélo.
@@ -123,7 +127,7 @@ Cette solution est plus facile à mettre en oeuvre pour le constructeur mais moi
 
 Un système informatique, pas encore disponible, permettra de mutualiser l'utilisation d'une charrette ou de n'importe quel vélo, pour étendre les imaginaires de toute un quartier. Le code s'appuiera sur celui d'[Open Source Bikeshare](https://github.com/cyklokoalicia/OpenSourceBikeShare).
 
-Ce système de partage a vocation à fonctionner sur un ordinateur type Raspberry Pi et peut
+Ce système de partage a vocation à fonctionner sur un ordinateur type Raspberry Pi et pourra tout aussi bien gérer la mutualisation d'une charrette que de vélos en partage.
 
 ## Modulaire
 

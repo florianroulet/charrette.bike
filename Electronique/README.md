@@ -102,7 +102,7 @@ Celui-ci permet:
 | Relais Omron G5V-2-H1| Activation du contrôleur de moteur | 1 | |
 | Transistor NPN générique | activation du frein moteur | 1 | |
 | Résistance 5mOhm | Mesure de courant | 1 | |
-| Résistance 1kOhm | Pont diviseur de tension | 1 | A vérifier - R5 |
+| Résistance 1kOhm | Pont diviseur de tension | 1 | R5 |
 | Résistance 470 kOhm| Amplificateur opérationnel | 2 | R7 - R10|
 | Résistance 10 kOhm | Amplificateur opérationnel et pont diviseur de tension | 3 | R6 - R9 - R4 |
 | Résistance 2,2kOhm | Tirage par le bas et filtre RC | 3 | R1 - R2 - R3 |
