@@ -581,10 +581,17 @@ void loop()
   }
   moteur.mettreLesGaz(sortieMoteur);
 
-  if(millis()%500>250)
+
+  // gestion de la led
+  if(sortieMoteur>0 && vitesseMoyenne<1.0){
+    if(millis()%1000>500)
+      digitalWrite(ledPin,HIGH);
+    else
+      digitalWrite(ledPin,LOW);
+  }
+  else{
     digitalWrite(ledPin,HIGH);
-  else
-    digitalWrite(ledPin,LOW);
+  }
 }
 
 
