@@ -584,6 +584,12 @@ void loop()
 
   // gestion de la led
   if(sortieMoteur>0 && vitesseMoyenne<1.0){
+    if(millis()%3000>500)
+      digitalWrite(ledPin,HIGH);
+    else
+      digitalWrite(ledPin,LOW);
+  }
+  else if(etat == RESET_CAPTEUR){
     if(millis()%1000>500)
       digitalWrite(ledPin,HIGH);
     else
