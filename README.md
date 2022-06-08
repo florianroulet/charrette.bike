@@ -1,5 +1,7 @@
 # CHARRETTE: CHARRETTE Hardi Auto-freinante Remorquable Réservable Esthétique Tractable Tenace Électrique
 
+origine : https://framagit.org/Veloma/Charrette
+
 ## Description
 Charrette est une remorque à vélo à trois roues avec système  de  freinage  inertiel et un système d’assistance électrique autonome.
  * Pensée  pour  l’autoconstruction  et  une  diffusion large, la remorque s’attelle sur toutes les tiges de selle de vélo  ou se tire à la main.
@@ -91,7 +93,7 @@ Nous n'avons pas encore réussi à retourner la charrette dans un virage.
 
 ## Assistance électrique
 
-Là où les vélos sont limités à 250W, les remorques à vélo n'observent pas cette limite tant qu'elles ne sont pas motrices, entendez qu'elles ne poussent pas le vélo.
+Là où les vélos sont limités à 250W, les remorques à vélo n'observent pas cette limite tant qu'elles ne sont pas motrices, entendez qu'elles ne poussent pas le vélo.sdfdsf
 Le système d'assistance électrique met donc la remorque en équilibre derrière le cycliste et active même le freinage moteur en cas de besoin.
 Nous préconisons un moteur de 1200W et une batterie de 48V afin d'avoir assez de puissance pour déplacer jusqu'à 300kg, il faudra tout de même appuyer sur les pédales.
 
